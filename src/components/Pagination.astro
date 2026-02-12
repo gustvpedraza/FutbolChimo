@@ -1,0 +1,33 @@
+---
+interface Props {
+  baseUrl: string;
+  currentPage: number;
+  totalPages: number;
+  label?: string;
+}
+
+const { baseUrl, currentPage, totalPages, label = 'Paginación' } = Astro.props;
+---
+{totalPages > 1 ? (
+  <nav class="flex items-center justify-center gap-2 pt-8" aria-label={label}>
+    {currentPage > 1 && (
+      <a
+        href={currentPage === 2 ? baseUrl : `${baseUrl}/page/${currentPage - 1}`}
+        class="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:border-primary hover:bg-primary/10 font-sans"
+      >
+        ← Anterior
+      </a>
+    )}
+    <span class="px-4 py-2 text-sm text-white/60">
+      Página {currentPage} de {totalPages}
+    </span>
+    {currentPage < totalPages && (
+      <a
+        href={`${baseUrl}/page/${currentPage + 1}`}
+        class="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:border-primary hover:bg-primary/10 font-sans"
+      >
+        Siguiente →
+      </a>
+    )}
+  </nav>
+) : null}

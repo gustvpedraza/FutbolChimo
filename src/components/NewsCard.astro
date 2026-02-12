@@ -1,0 +1,67 @@
+---
+import type { WpPostEmbedded } from '../types/wordpress';
+import { getFeaturedImageUrl, formatDate, getFirstCategoryName } from '../lib/utils';
+
+interface Props {
+  post: WpPostEmbedded;
+  /** 'default' | 'compact' | 'featured' | 'horizontal' | 'large' */
+  variant?: 'default' | 'compact' | 'featured' | 'horizontal' | 'large';
+  showCategory?: boolean;
+}
+
+const { post, variant = 'default', showCategory = true } = Astro.props;
+const imageUrl = getFeaturedImageUrl(post);
+const categoryName = showCategory ? getFirstCategoryName(post) : null;
+const isHorizontal = variant === 'horizontal';
+---
+<article class:list={[
+  'group cursor-pointer bg-card-dark rounded-xl border border-white/10 overflow-hidden hover:border-gold/50 transition-all hover:shadow-2xl hover:shadow-gold/5',
+  isHorizontal ? 'flex flex-row h-full' : 'flex flex-col',
+]}>
+  <a href={`/noticias/${post.slug}`} class:list={[
+    'block text-inherit',
+    isHorizontal ? 'flex flex-row flex-1 min-w-0' : 'flex-1 flex flex-col',
+  ]}>
+    <div class:list={[
+      'relative overflow-hidden bg-black/40 shrink-0',
+      isHorizontal ? 'w-28 sm:w-32 min-h-full' : variant === 'large' ? 'aspect-square w-full' : 'aspect-video w-full',
+    ]}>
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+        />
+      ) : (
+        <div class="h-full w-full bg-primary/20" aria-hidden="true" />
+      )}
+      <div class="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" aria-hidden="true"></div>
+    </div>
+    <div class:list={[
+      'flex flex-col gap-1.5 min-w-0',
+      isHorizontal ? 'p-3 justify-center flex-1' : 'gap-2 p-5 border-t border-white/5',
+    ]}>
+      {categoryName && (
+        <span class="text-gold text-[10px] font-bold uppercase tracking-widest font-sans">
+          {categoryName}
+        </span>
+      )}
+      <h3 class:list={[
+        'font-black text-white leading-tight group-hover:text-gold transition-colors font-display line-clamp-2',
+        isHorizontal ? 'text-base' : variant === 'featured' ? 'text-2xl' : 'text-xl',
+      ]}>
+        {post.title.rendered}
+      </h3>
+      {variant !== 'compact' && variant !== 'horizontal' && variant !== 'large' && (
+        <div class="text-slate-400 text-base font-sans line-clamp-2 leading-relaxed [&_*]:!text-slate-400 [&_a]:!text-gold [&_p]:m-0" set:html={post.excerpt.rendered} />
+      )}
+      <time class:list={[
+        'text-slate-500 font-sans',
+        isHorizontal ? 'text-[10px]' : 'text-xs mt-1',
+      ]} datetime={post.date}>
+        {formatDate(post.date)}
+      </time>
+    </div>
+  </a>
+</article>

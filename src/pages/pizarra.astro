@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LineupBuilder from '../components/LineupBuilder';
+---
+
+<Layout title="Pizarra | Fútbol Chimó" description="Lineup Builder — arma tu once ideal">
+  <article class="space-y-8">
+    <header class="flex items-center gap-3">
+      <span class="w-2 h-10 bg-gold rounded-full shrink-0" aria-hidden="true"></span>
+      <div>
+        <h1 class="text-3xl font-black text-white font-display">La Pizarra Vinotinto</h1>
+        <p class="mt-2 text-slate-400 font-sans">
+          Arma tu formación. Arrastra jugadores a la cancha y crea tus estrategias.
+        </p>
+      </div>
+    </header>
+
+    <div class="min-h-[500px]">
+      <LineupBuilder client:load />
+    </div>
+
+    <section class="mt-12 max-w-xl mx-auto" aria-labelledby="apoya-pizarra-heading">
+      <div class="bg-card-dark rounded-xl p-8 text-center relative overflow-hidden group border border-white/10">
+        <div class="absolute top-0 right-0 p-4 opacity-10 rotate-12" aria-hidden="true">
+          <span class="material-symbols-outlined text-6xl text-white">volunteer_activism</span>
+        </div>
+        <div class="relative z-10">
+          <span class="material-symbols-outlined text-5xl text-gold mb-4 block" aria-hidden="true">savings</span>
+          <h2 id="apoya-pizarra-heading" class="text-2xl font-black text-white mb-3 font-display">Apoya nuestro trabajo</h2>
+          <p class="text-slate-400 text-sm font-sans mb-6">
+            Tu donación ayuda a mantener Fútbol Chimó y a seguir llevando la Vinotinto a cada rincón.
+          </p>
+          <a
+            href="#"
+            class="inline-block bg-gold text-slate-900 font-bold text-sm py-3 px-6 rounded-xl hover:bg-gold/90 transition-all border border-gold/30 font-sans"
+          >
+            Haz una donación
+          </a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Layout>

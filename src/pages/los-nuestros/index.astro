@@ -1,0 +1,73 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import LegionarioCard from '../../components/LegionarioCard.astro';
+import { wpApi } from '../../lib/wordpress';
+import { wpJugadorToLegionario } from '../../lib/jugadores';
+import type { Legionario } from '../../types/legionarios';
+
+let jugadores: Legionario[] = [];
+try {
+  const wpJugadores = await wpApi.getJugadores({ per_page: 50 });
+  jugadores = wpJugadores.map(wpJugadorToLegionario);
+} catch {
+  jugadores = [];
+}
+---
+
+<Layout
+  title="Los Nuestros | Fútbol Chimó"
+  description="Seguimiento de nuestros jugadores Vinotinto en las mejores ligas del mundo: minutos, goles, asistencias y más."
+>
+  <section class="space-y-8">
+    <header class="mb-10">
+      <h1 class="text-3xl sm:text-4xl font-black text-white flex items-center gap-3 font-display">
+        <span class="w-2 h-10 bg-gold rounded-full shrink-0" aria-hidden="true"></span>
+        Los Nuestros
+      </h1>
+      <p class="mt-3 text-slate-400 text-lg font-sans max-w-2xl">
+        Seguimiento de nuestros jugadores Vinotinto en las mejores ligas del mundo. Minutos jugados, goles, asistencias, tarjetas y estado físico.
+      </p>
+    </header>
+
+    <!-- Barra de filtros (estructura lista para conectar filtros/orden en el futuro) -->
+    <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-card-dark border border-white/10">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/20 border border-primary/40 text-white text-sm font-bold uppercase tracking-wider font-sans">
+          <span class="material-symbols-outlined text-lg">public</span>
+          Todas las ligas
+        </span>
+        <span class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 text-white/60 text-sm font-bold uppercase tracking-wider font-sans">
+          <span class="material-symbols-outlined text-lg">sports_handball</span>
+          Posición
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-white/50 uppercase tracking-widest font-sans">Ordenar:</span>
+        <select class="bg-card-dark border border-white/20 text-white text-sm font-bold font-sans py-1.5 px-3 rounded-xl focus:ring-2 focus:ring-gold focus:outline-none">
+          <option value="minutes">Minutos jugados</option>
+          <option value="goals">Goles</option>
+          <option value="assists">Asistencias</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Grid de cards (jugadores desde WordPress CPT Los nuestros) -->
+    {jugadores.length > 0 ? (
+      <>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {jugadores.map((player) => (
+            <LegionarioCard player={player} />
+          ))}
+        </div>
+        <p class="text-sm text-white/50 font-sans mt-8">
+          Mostrando <span class="text-white font-bold">{jugadores.length}</span> jugadores.
+        </p>
+      </>
+    ) : (
+      <div class="rounded-xl border border-white/10 bg-card-dark p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-slate-500 mb-4 block" aria-hidden="true">groups</span>
+        <p class="text-slate-400 font-sans">Aún no hay jugadores. Añade jugadores en WordPress (Los nuestros) para verlos aquí.</p>
+      </div>
+    )}
+  </section>
+</Layout>

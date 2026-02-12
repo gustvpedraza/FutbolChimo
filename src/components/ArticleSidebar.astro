@@ -1,0 +1,95 @@
+---
+/** Sidebar de la página de artículo: noticias relacionadas, más leído, support the team */
+import type { WpPostEmbedded } from '../types/wordpress';
+import { getFeaturedImageUrl, getFirstCategoryName } from '../lib/utils';
+
+interface Props {
+  relatedPosts: WpPostEmbedded[];
+  mostReadPosts: WpPostEmbedded[];
+  currentSlug: string;
+}
+
+const { relatedPosts, mostReadPosts, currentSlug } = Astro.props;
+const related = relatedPosts.filter((p) => p.slug !== currentSlug).slice(0, 4);
+const mostRead = mostReadPosts.filter((p) => p.slug !== currentSlug).slice(0, 5);
+---
+
+<div class="flex flex-col gap-8">
+  <!-- Noticias relacionadas -->
+  <div class="bg-card-dark border border-white/10 rounded-xl p-5">
+    <h4 class="text-xl font-black text-white mb-5 font-display flex items-center gap-2">
+      <span class="material-symbols-outlined text-gold">newspaper</span>
+      Noticias relacionadas
+    </h4>
+    <div class="flex flex-col gap-5">
+      {related.length > 0 ? (
+        related.map((post) => {
+          const thumb = getFeaturedImageUrl(post);
+          const cat = getFirstCategoryName(post);
+          return (
+            <a href={`/noticias/${post.slug}`} class="group flex gap-3 items-start">
+              <div class="w-20 h-20 shrink-0 overflow-hidden bg-white/10 border border-white/10 rounded-lg">
+                {thumb ? (
+                  <img src={thumb} alt="" class="w-full h-full object-cover group-hover:opacity-90 transition-opacity" width="80" height="80" />
+                ) : (
+                  <div class="w-full h-full bg-primary/20" aria-hidden="true" />
+                )}
+              </div>
+              <div class="min-w-0 flex-1">
+                <h5 class="text-sm font-bold text-white group-hover:text-gold transition-colors font-display line-clamp-2">
+                  {post.title.rendered}
+                </h5>
+                {cat && <span class="text-xs text-gold font-bold uppercase tracking-widest mt-1 block">{cat}</span>}
+              </div>
+            </a>
+          );
+        })
+      ) : (
+        <p class="text-sm text-slate-400">No hay más noticias por ahora.</p>
+      )}
+    </div>
+  </div>
+
+  <!-- Más leído -->
+  <div class="bg-card-dark border border-white/10 rounded-xl p-5">
+    <h4 class="text-lg font-black text-white mb-4 font-display border-b border-white/10 pb-2">
+      Más leído
+    </h4>
+    <div class="flex flex-col gap-4">
+      {mostRead.length > 0 ? (
+        mostRead.map((post, i) => (
+          <a href={`/noticias/${post.slug}`} class="flex gap-4 items-center group">
+            <span class="text-2xl font-black text-primary/50 group-hover:text-gold transition-colors font-sans shrink-0">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <p class="text-sm font-medium text-slate-400 group-hover:text-white transition-colors line-clamp-2">
+              {post.title.rendered}
+            </p>
+          </a>
+        ))
+      ) : (
+        <p class="text-sm text-slate-400">No hay datos.</p>
+      )}
+    </div>
+  </div>
+
+  <!-- Donaciones -->
+  <div class="bg-card-dark rounded-xl p-6 text-center relative overflow-hidden group border border-white/10">
+    <div class="absolute top-0 right-0 p-4 opacity-10 rotate-12" aria-hidden="true">
+      <span class="material-symbols-outlined text-6xl text-white">volunteer_activism</span>
+    </div>
+    <div class="relative z-10">
+      <span class="material-symbols-outlined text-5xl text-gold mb-4 block" aria-hidden="true">savings</span>
+      <h3 class="text-xl font-black text-white mb-2 font-display">Apoya nuestro trabajo</h3>
+      <p class="text-slate-400 text-sm font-sans mb-4">
+        Tu donación ayuda a mantener Fútbol Chimó y a seguir llevando la Vinotinto a cada rincón.
+      </p>
+      <a
+        href="#"
+        class="inline-block w-full bg-gold text-slate-900 font-bold text-sm py-2.5 px-6 rounded-xl hover:bg-gold/90 transition-all border border-gold/30 font-sans text-center"
+      >
+        Haz una donación
+      </a>
+    </div>
+  </div>
+</div>

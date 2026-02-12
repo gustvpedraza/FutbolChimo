@@ -1,0 +1,73 @@
+/**
+ * Datos de legionarios (mock). Sustituir por llamada a API cuando exista.
+ */
+import type { Legionario } from '../types/legionarios';
+
+export const LEGIONARIOS: Legionario[] = [
+  {
+    id: '1',
+    name: 'Salomón Rondón',
+    team: 'CF Pachuca',
+    league: 'Liga MX',
+    image: 'https://picsum.photos/seed/rondon/200/200',
+    teamLogo: 'https://picsum.photos/seed/pachuca/64/64',
+    stats: { minutes: "90'", goals: 2, assists: 0 },
+    status: { type: 'available', label: 'Disponible' },
+    matchday: 'Jornada 12',
+  },
+  {
+    id: '2',
+    name: 'Yangel Herrera',
+    team: 'Girona FC',
+    league: 'LaLiga',
+    image: 'https://picsum.photos/seed/yangel/200/200',
+    teamLogo: 'https://picsum.photos/seed/girona/64/64',
+    stats: { minutes: "75'", goals: 0, assists: 1, cards: '1 Amarilla' },
+    status: { type: 'starter', label: 'Titular' },
+    matchday: 'Jornada 28',
+  },
+  {
+    id: '3',
+    name: 'Nahuel Ferraresi',
+    team: 'São Paulo',
+    league: 'Brasileirão',
+    image: 'https://picsum.photos/seed/ferraresi/200/200',
+    teamLogo: 'https://picsum.photos/seed/saopaulo/64/64',
+    stats: { minutes: "0'", goals: 0, assists: 0, condition: 'Lesionado' },
+    status: { type: 'injured', label: 'Lesionado', subText: 'Esguince de tobillo' },
+    matchday: '',
+  },
+  {
+    id: '4',
+    name: 'Jefferson Savarino',
+    team: 'Botafogo',
+    league: 'Brasileirão',
+    image: 'https://picsum.photos/seed/savarino/200/200',
+    teamLogo: 'https://picsum.photos/seed/botafogo/64/64',
+    stats: { minutes: "62'", goals: 1, assists: 1 },
+    status: { type: 'highlight', label: 'Actuación Destacada' },
+    matchday: 'Jornada 4',
+  },
+  {
+    id: '5',
+    name: 'Jon Aramburu',
+    team: 'Real Sociedad',
+    league: 'LaLiga',
+    image: 'https://picsum.photos/seed/aramburu/200/200',
+    teamLogo: 'https://picsum.photos/seed/realsociedad/64/64',
+    stats: { minutes: "90'", goals: 0, assists: 0, cards: '1 Roja' },
+    status: { type: 'suspended', label: 'Suspendido' },
+    matchday: 'Jornada 29',
+  },
+  {
+    id: '6',
+    name: 'Darwin Machís',
+    team: 'Cádiz CF',
+    league: 'LaLiga',
+    image: 'https://picsum.photos/seed/machis/200/200',
+    teamLogo: 'https://picsum.photos/seed/cadiz/64/64',
+    stats: { minutes: "88'", goals: 1, assists: 0 },
+    status: { type: 'starter', label: 'Titular' },
+    matchday: 'Jornada 30',
+  },
+];

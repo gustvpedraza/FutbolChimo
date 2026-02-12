@@ -1,0 +1,44 @@
+---
+import type { WpPostEmbedded } from '../types/wordpress';
+import { getFeaturedImageUrl } from '../lib/utils';
+
+interface Props {
+  post: WpPostEmbedded | null;
+}
+
+const { post } = Astro.props;
+const imageUrl = post ? getFeaturedImageUrl(post) : null;
+---
+<section class="relative overflow-hidden rounded-2xl bg-vinotinto text-white shadow-xl shadow-vinotinto/20">
+  {post ? (
+    <>
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt=""
+          class="absolute inset-0 h-full w-full object-cover opacity-40"
+          loading="eager"
+        />
+      )}
+      <div class="relative mx-auto max-w-4xl px-6 py-16 sm:px-8 sm:py-24">
+        <a href={`/noticias/${post.slug}`} class="block group">
+          <span class="text-xs font-semibold uppercase tracking-wider text-chimo-gold">Destacado</span>
+          <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl group-hover:text-chimo-gold transition-colors">
+            {post.title.rendered}
+          </h2>
+          <p class="mt-4 max-w-2xl text-white/90 line-clamp-2" set:html={post.excerpt.rendered} />
+          <span class="mt-4 inline-block text-sm font-medium text-chimo-gold group-hover:underline">
+            Leer más →
+          </span>
+        </a>
+      </div>
+    </>
+  ) : (
+    <div class="relative mx-auto max-w-4xl px-6 py-16 sm:px-8 sm:py-24">
+      <span class="text-xs font-semibold uppercase tracking-wider text-chimo-gold">Destacado</span>
+      <p class="mt-2 text-white/80">
+        Añade en WordPress un post con la etiqueta <strong>destacado</strong> para verlo aquí.
+      </p>
+    </div>
+  )}
+</section>

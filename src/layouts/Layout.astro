@@ -1,0 +1,113 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Si true, el contenido principal va en columna 8 y se espera slot "sidebar" */
+  hasSidebar?: boolean;
+}
+
+const { title = 'Fútbol Chimó', description = 'Blog premium sobre fútbol venezolano', hasSidebar = false } = Astro.props;
+
+const currentPath = Astro.url.pathname;
+
+/** Verifica si un enlace está activo (exacto para "/" o por prefijo para las demás) */
+function isActive(href: string): boolean {
+  if (href === '/') return currentPath === '/';
+  return currentPath.startsWith(href);
+}
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#221015" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <title>{title}</title>
+    <style is:global>
+      body { font-family: 'Lexend', sans-serif; }
+      .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col bg-background-dark text-white selection:bg-primary selection:text-white">
+    <header class="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur-md">
+      <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between gap-4">
+          <a href="/" class="flex items-center gap-3 group">
+            <span class="material-symbols-outlined text-gold text-3xl">sports_soccer</span>
+            <span class="text-2xl font-black tracking-tight text-white font-sans group-hover:text-gold transition-colors">
+              Fútbol <span class="text-gold">Chimó</span>
+            </span>
+          </a>
+
+          <div class="flex items-center gap-6 md:gap-8 ml-auto">
+            <nav class="hidden md:flex items-center gap-8" aria-label="Principal">
+              <a href="/" class:list={['text-sm font-bold transition-colors font-sans', isActive('/') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/') ? 'page' : undefined}>Inicio</a>
+              <a href="/selecciones" class:list={['text-sm font-bold transition-colors font-sans', isActive('/selecciones') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/selecciones') ? 'page' : undefined}>La Vinotinto</a>
+              <a href="/los-nuestros" class:list={['text-sm font-bold transition-colors font-sans', isActive('/los-nuestros') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/los-nuestros') ? 'page' : undefined}>Los Nuestros</a>
+              <a href="/contacto" class:list={['text-sm font-bold transition-colors font-sans', isActive('/contacto') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/contacto') ? 'page' : undefined}>Contacto</a>
+            </nav>
+            <a href="/pizarra" class="rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold py-2 px-4 sm:px-6 transition-colors hidden sm:inline-block font-sans whitespace-nowrap">
+              La Pizarra Vinotinto
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      {hasSidebar ? (
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-16">
+          <div class="lg:col-span-8 flex flex-col gap-16">
+            <slot />
+          </div>
+          <aside class="lg:col-span-4">
+            <slot name="sidebar" />
+          </aside>
+        </div>
+      ) : (
+        <div class="flex flex-col gap-12">
+          <slot />
+        </div>
+      )}
+    </main>
+
+    <footer class="mt-20 border-t border-white/10 bg-black py-12">
+      <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-gold text-3xl">sports_soccer</span>
+            <span class="text-white font-black text-2xl font-sans">Fútbol <span class="text-gold">Chimó</span></span>
+          </div>
+          <nav class="flex flex-wrap justify-center gap-8 text-sm font-bold text-slate-400 font-sans" aria-label="Enlaces del sitio">
+            <a href="/" class:list={['hover:text-gold transition-colors', isActive('/') && 'text-gold']}>Inicio</a>
+            <a href="/selecciones" class:list={['hover:text-gold transition-colors', isActive('/selecciones') && 'text-gold']}>La Vinotinto</a>
+            <a href="/los-nuestros" class:list={['hover:text-gold transition-colors', isActive('/los-nuestros') && 'text-gold']}>Los Nuestros</a>
+            <a href="/contacto" class:list={['hover:text-gold transition-colors', isActive('/contacto') && 'text-gold']}>Contacto</a>
+            <a href="/pizarra" class:list={['hover:text-gold transition-colors', isActive('/pizarra') && 'text-gold']}>La Pizarra Vinotinto</a>
+          </nav>
+        </div>
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-white/5">
+          <p class="text-xs text-slate-500 font-sans tracking-wide">
+            © {new Date().getFullYear()} Fútbol Chimó. La pasión del fútbol venezolano en un solo lugar.
+          </p>
+          <p class="text-[10px] text-slate-600 font-sans uppercase tracking-[0.2em]">
+            Ayudando a impulsar el fútbol venezolano
+          </p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

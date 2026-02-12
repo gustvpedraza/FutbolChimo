@@ -1,0 +1,22 @@
+---
+/** Chip compacto reutilizable: label en dorado + fecha (mismo estilo que MatchCard compact). */
+interface Props {
+  label: string;
+  date?: string;
+  /** Si true, no hace el article clickeable ni cursor-pointer */
+  static?: boolean;
+}
+
+const { label, date, static: isStatic = true } = Astro.props;
+---
+
+<article
+  class="bg-card-dark rounded-xl rounded-br-none border border-white/10 flex flex-col gap-0.5 py-1.5 px-3 min-w-[140px] max-w-[200px] hover:border-gold/30 transition-all"
+  class:list={[!isStatic && 'cursor-pointer group']}
+  aria-label={date ? `${label} · ${date}` : label}
+>
+  <span class="text-[9px] text-gold font-bold uppercase tracking-wider font-sans">
+    {label}
+    {date ? <span class="text-slate-400 font-normal normal-case ml-1">· {date}</span> : null}
+  </span>
+</article>

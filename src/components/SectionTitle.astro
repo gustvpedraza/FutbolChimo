@@ -1,0 +1,33 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+  /** Enlace "Ver todo" (opcional) */
+  viewAllHref?: string;
+  /** Id opcional para el h2 (accesibilidad) */
+  id?: string;
+  /** Tamaño del título */
+  size?: 'default' | 'sm';
+}
+
+const { title, subtitle, viewAllHref, id, size = 'default' } = Astro.props;
+---
+<header class="flex items-center justify-between gap-4 border-b border-white/10 pb-4 mb-8">
+  <div class="flex flex-col min-w-0">
+    <div class="flex items-end gap-3 flex-wrap">
+      <h2 id={id} class:list={[size === 'sm' ? 'text-2xl' : 'text-3xl', 'font-black text-white flex items-center gap-3 font-display']}>
+        <span class:list={['w-2 bg-gold rounded-full shrink-0', size === 'sm' ? 'h-8' : 'h-10']} aria-hidden="true"></span>
+        {title}
+      </h2>
+      <slot name="sublabels" />
+    </div>
+    {subtitle && <p class="mt-2 text-sm text-slate-400 font-sans">{subtitle}</p>}
+  </div>
+  {viewAllHref && (
+    <a href={viewAllHref} class="text-gold text-sm font-bold hover:text-white transition-colors flex items-center gap-1 font-sans shrink-0">
+      Ver todo
+      <span class="material-symbols-outlined text-lg">chevron_right</span>
+    </a>
+  )}
+  <slot name="end" />
+</header>

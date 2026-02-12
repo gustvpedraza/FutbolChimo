@@ -1,0 +1,325 @@
+---
+/**
+ * Widget reutilizable: Slider de resultados + Tabla de posiciones.
+ * Se usa en el Sidebar del inicio (Liga FUTVE) y en la página de selecciones (Vinotinto).
+ */
+import type { PartidoLigaFutve, PosicionLigaFutve } from '../lib/wordpress';
+import type { WpEquipoFutVE } from '../types/wordpress';
+
+interface Props {
+  /** Partidos a mostrar en el slider */
+  partidos?: PartidoLigaFutve[] | null;
+  /** Posiciones para la tabla */
+  posiciones?: PosicionLigaFutve[] | null;
+  /** Equipos del CPT para cruzar escudos (opcional) */
+  equipos?: WpEquipoFutVE[] | null;
+  /** Título del slider de resultados */
+  tituloResultados?: string;
+  /** Título de la tabla de posiciones */
+  tituloPosiciones?: string;
+  /** Id único para evitar colisiones de Splide/DOM */
+  id?: string;
+}
+
+const {
+  partidos: partidosProp,
+  posiciones: posicionesProp,
+  equipos: equiposProp,
+  tituloResultados = 'Resultados y próximos partidos',
+  tituloPosiciones = 'Posiciones',
+  id: widgetId = 'res',
+} = Astro.props;
+
+const partidos = partidosProp ?? [];
+const posiciones = posicionesProp ?? [];
+const equipos = (equiposProp ?? []).slice(0, 30);
+
+/** Mapa de nombre de equipo (lowercase) → CPT para escudos */
+const equipoMap = new Map<string, typeof equipos[number]>();
+for (const eq of equipos) {
+  const name = eq.title.rendered.replace(/<[^>]+>/g, '').trim().toLowerCase();
+  equipoMap.set(name, eq);
+}
+
+function findEscudo(nombre: string): string | undefined {
+  const eq = equipoMap.get(nombre.toLowerCase());
+  if (!eq) return undefined;
+  return eq.escudo_url || eq.acf?.escudo_url || eq._embedded?.['wp:featuredmedia']?.[0]?.source_url || undefined;
+}
+
+function parseMarcador(m?: string): [number, number] | null {
+  if (!m || m.trim().toLowerCase() === 'vs') return null;
+  const parts = m.split('-').map(s => s.trim());
+  if (parts.length !== 2) return null;
+  const a = parseInt(parts[0], 10);
+  const b = parseInt(parts[1], 10);
+  if (isNaN(a) || isNaN(b)) return null;
+  return [a, b];
+}
+
+/** Standings */
+type StandingRow = {
+  rank: number;
+  team: string;
+  iniciales: string;
+  color?: string;
+  points: number;
+  pj: number;
+  dg: number;
+  logo?: string;
+};
+
+const standingsData: StandingRow[] = posiciones.map((pos) => {
+  const nombre = pos.equipo?.nombre ?? '';
+  const iniciales = pos.equipo?.iniciales ?? nombre.slice(0, 3).toUpperCase();
+  const color = pos.equipo?.color ?? undefined;
+  const logo = findEscudo(nombre);
+  return {
+    rank: pos.posicion ?? 0,
+    team: nombre || 'Equipo',
+    iniciales,
+    color,
+    points: Number(pos.pts ?? 0) || 0,
+    pj: Number(pos.pj ?? 0) || 0,
+    dg: Number(pos.dg ?? 0) || 0,
+    logo,
+  };
+});
+
+const INITIAL_ROWS = 7;
+const standingsVisible = standingsData.slice(0, INITIAL_ROWS);
+const standingsMore = standingsData.slice(INITIAL_ROWS);
+const hasMore = standingsMore.length > 0;
+
+const sliderId = `${widgetId}-slider`;
+const moreId = `${widgetId}-standings-more`;
+const toggleId = `${widgetId}-standings-toggle`;
+---
+
+<div class="flex flex-col gap-6 h-full">
+  <!-- Slider de resultados -->
+  <div class="bg-card-dark rounded-xl border border-white/10 overflow-hidden">
+    <div class="px-5 pt-5 pb-3">
+      <h3 class="text-base font-black text-white font-display">{tituloResultados}</h3>
+    </div>
+
+    {partidos.length > 0 ? (
+      <section
+        id={sliderId}
+        class="splide resultados-splide"
+        aria-label="Resultados de partidos"
+      >
+        <div class="splide__track">
+          <ul class="splide__list">
+            {partidos.map((p) => {
+              const local = p.local;
+              const visitante = p.visitante;
+              const homeName = local?.nombre ?? '';
+              const awayName = visitante?.nombre ?? '';
+              const homeInit = local?.iniciales ?? homeName.slice(0, 3).toUpperCase();
+              const awayInit = visitante?.iniciales ?? awayName.slice(0, 3).toUpperCase();
+              const homeColor = local?.color ?? undefined;
+              const awayColor = visitante?.color ?? undefined;
+              const homeLogo = findEscudo(homeName);
+              const awayLogo = findEscudo(awayName);
+              const score = parseMarcador(p.marcador);
+              const liga = (p.liga ?? '').trim();
+              const estado = (p.estado ?? '').trim();
+              return (
+                <li class="splide__slide">
+                  <div class="px-5 pb-5">
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-gold">{liga}</span>
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{estado}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      {/* Local */}
+                      <div class="flex-1 flex flex-col items-center gap-2 min-w-0">
+                        <div
+                          class="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-white/10 flex items-center justify-center bg-white"
+                        >
+                          {homeLogo ? (
+                            <img src={homeLogo} alt={homeName} class="w-full h-full object-contain p-1" loading="lazy" />
+                          ) : (
+                            <span class="text-sm font-black" style={homeColor ? `color:${homeColor}` : undefined}>{homeInit}</span>
+                          )}
+                        </div>
+                        <span class="text-white font-bold text-xs text-center truncate w-full">{homeName}</span>
+                      </div>
+                      {/* Marcador */}
+                      <div class="shrink-0 flex items-center justify-center gap-2 px-2">
+                        {score ? (
+                          <div class="flex items-center gap-2">
+                            <span class="text-white font-black text-2xl font-mono">{score[0]}</span>
+                            <span class="text-slate-500 font-bold text-lg">-</span>
+                            <span class="text-white font-black text-2xl font-mono">{score[1]}</span>
+                          </div>
+                        ) : (
+                          <span class="text-slate-400 font-bold text-sm uppercase">vs</span>
+                        )}
+                      </div>
+                      {/* Visitante */}
+                      <div class="flex-1 flex flex-col items-center gap-2 min-w-0">
+                        <div
+                          class="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-white/10 flex items-center justify-center bg-white"
+                        >
+                          {awayLogo ? (
+                            <img src={awayLogo} alt={awayName} class="w-full h-full object-contain p-1" loading="lazy" />
+                          ) : (
+                            <span class="text-sm font-black" style={awayColor ? `color:${awayColor}` : undefined}>{awayInit}</span>
+                          )}
+                        </div>
+                        <span class="text-white font-bold text-xs text-center truncate w-full">{awayName}</span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+    ) : (
+      <p class="text-xs text-slate-400 text-center px-5 pb-5">No hay partidos registrados aún.</p>
+    )}
+  </div>
+
+  <!-- Tabla de posiciones -->
+  {standingsData.length > 0 && (
+    <div class="bg-card-dark rounded-xl p-5 border border-white/10 flex-1">
+      <h3 class="text-base font-black text-white mb-4 font-display">{tituloPosiciones}</h3>
+      <div class="overflow-hidden">
+        <table class="w-full text-sm text-left">
+          <thead class="text-[10px] text-slate-400 uppercase tracking-widest border-b border-white/10">
+            <tr>
+              <th class="px-1.5 py-2 font-semibold text-white">#</th>
+              <th class="px-1.5 py-2 font-semibold text-white">Equipo</th>
+              <th class="px-1.5 py-2 font-semibold text-center text-white">PJ</th>
+              <th class="px-1.5 py-2 font-semibold text-center text-white">DG</th>
+              <th class="px-1.5 py-2 font-semibold text-right text-white">Pts</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/10 font-sans">
+            {standingsVisible.map((row) => (
+              <tr class="hover:bg-surface-muted transition-colors">
+                <td class:list={[row.rank === 1 ? 'text-gold' : 'text-slate-400', 'px-1.5 py-2.5 font-bold text-xs']}>
+                  {row.rank}
+                </td>
+                <td class="px-1.5 py-2.5 text-white font-medium">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-5 h-5 shrink-0 rounded-full overflow-hidden flex items-center justify-center"
+                      class:list={[row.logo ? 'bg-white' : '']}
+                      style={!row.logo && row.color ? `background-color:${row.color}` : !row.logo ? 'background-color:rgba(255,255,255,0.1)' : undefined}
+                    >
+                      {row.logo ? (
+                        <img src={row.logo} alt={row.team} class="w-full h-full object-contain" loading="lazy" />
+                      ) : (
+                        <span class="text-[6px] font-bold text-white">{row.iniciales}</span>
+                      )}
+                    </div>
+                    <span class="truncate text-xs">{row.team}</span>
+                  </div>
+                </td>
+                <td class="px-1.5 py-2.5 text-slate-400 text-center text-xs">{row.pj}</td>
+                <td class:list={['px-1.5 py-2.5 text-center text-xs font-medium', row.dg > 0 ? 'text-green-400' : row.dg < 0 ? 'text-red-400' : 'text-slate-400']}>
+                  {row.dg > 0 ? `+${row.dg}` : row.dg}
+                </td>
+                <td class="px-1.5 py-2.5 text-white text-right font-bold text-xs">{row.points}</td>
+              </tr>
+            ))}
+          </tbody>
+          {hasMore && (
+            <tbody id={moreId} class="divide-y divide-white/10 font-sans hidden" aria-hidden="true">
+              {standingsMore.map((row) => (
+                <tr class="hover:bg-surface-muted transition-colors">
+                  <td class:list={[row.rank === 1 ? 'text-gold' : 'text-slate-400', 'px-1.5 py-2.5 font-bold text-xs']}>
+                    {row.rank}
+                  </td>
+                  <td class="px-1.5 py-2.5 text-white font-medium">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-5 h-5 shrink-0 rounded-full overflow-hidden flex items-center justify-center"
+                        class:list={[row.logo ? 'bg-white' : '']}
+                        style={!row.logo && row.color ? `background-color:${row.color}` : !row.logo ? 'background-color:rgba(255,255,255,0.1)' : undefined}
+                      >
+                        {row.logo ? (
+                          <img src={row.logo} alt={row.team} class="w-full h-full object-contain" loading="lazy" />
+                        ) : (
+                          <span class="text-[6px] font-bold text-white">{row.iniciales}</span>
+                        )}
+                      </div>
+                      <span class="truncate text-xs">{row.team}</span>
+                    </div>
+                  </td>
+                  <td class="px-1.5 py-2.5 text-slate-400 text-center text-xs">{row.pj}</td>
+                  <td class:list={['px-1.5 py-2.5 text-center text-xs font-medium', row.dg > 0 ? 'text-green-400' : row.dg < 0 ? 'text-red-400' : 'text-slate-400']}>
+                    {row.dg > 0 ? `+${row.dg}` : row.dg}
+                  </td>
+                  <td class="px-1.5 py-2.5 text-white text-right font-bold text-xs">{row.points}</td>
+                </tr>
+              ))}
+            </tbody>
+          )}
+        </table>
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          id={toggleId}
+          class="standings-toggle w-full mt-4 py-2 text-xs font-bold text-slate-900 bg-gold hover:bg-gold/90 rounded-xl transition-all font-sans border border-gold/30 text-center cursor-pointer"
+          aria-expanded="false"
+          aria-controls={moreId}
+        >
+          Ver tabla completa
+        </button>
+      )}
+    </div>
+  )}
+</div>
+
+<script>
+  function initResultadosWidgets() {
+    if (typeof window.Splide === 'undefined') {
+      setTimeout(initResultadosWidgets, 50);
+      return;
+    }
+    document.querySelectorAll('.resultados-splide').forEach((el) => {
+      if (el.classList.contains('is-initialized')) return;
+      new window.Splide(el, {
+        type: 'loop',
+        perPage: 1,
+        autoplay: true,
+        interval: 7000,
+        pauseOnHover: true,
+        pauseOnFocus: true,
+        arrows: false,
+        pagination: false,
+        drag: true,
+        speed: 600,
+        i18n: { prev: 'Anterior', next: 'Siguiente', slideX: 'Resultado %s', pageX: 'Página %s' },
+      }).mount();
+    });
+
+    document.querySelectorAll('.standings-toggle').forEach((btn) => {
+      const id = btn.getAttribute('aria-controls');
+      const more = id ? document.getElementById(id) : null;
+      if (!more) return;
+      if (btn.hasAttribute('data-bound')) return;
+      btn.setAttribute('data-bound', '1');
+      btn.addEventListener('click', () => {
+        const expanded = more.classList.toggle('hidden');
+        more.setAttribute('aria-hidden', String(expanded));
+        btn.setAttribute('aria-expanded', String(!expanded));
+        btn.textContent = expanded ? 'Ver tabla completa' : 'Ver menos';
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initResultadosWidgets);
+  } else {
+    initResultadosWidgets();
+  }
+  document.addEventListener('astro:page-load', initResultadosWidgets);
+</script>

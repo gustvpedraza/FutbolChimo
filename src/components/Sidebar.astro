@@ -1,0 +1,473 @@
+---
+/** Sidebar estilo FutbolVE: Live Scores + Standings + Newsletter */
+import type { WpEquipoFutVE, WpJugador } from '../types/wordpress';
+import type { PartidoLigaFutve, PosicionLigaFutve } from '../lib/wordpress';
+
+interface Props {
+  /** Equipos provenientes del CPT EquiposFutVE para mostrar en resultados y standings. */
+  equipos?: WpEquipoFutVE[] | null;
+  /** Partidos reales desde la página resultados-liga-futve (ACF datos_partidos_json). */
+  partidos?: PartidoLigaFutve[] | null;
+  /** Posiciones desde la página resultados-liga-futve (ACF datos_posiciones_json). */
+  posiciones?: PosicionLigaFutve[] | null;
+  /** Jugadores del CPT Los Nuestros */
+  jugadores?: WpJugador[] | null;
+}
+
+const { equipos: equiposProp, partidos: partidosProp, posiciones: posicionesProp, jugadores: jugadoresProp } = Astro.props;
+
+/** Filtrar jugadores con actuación destacada o MVP */
+const VENEX_ACTUACIONES = ['actuación destacada', 'mvp'];
+const venexJugadores = (jugadoresProp ?? []).filter((j) => {
+  const act = (j.acf?.actuacion ?? '').toString().toLowerCase().trim();
+  return VENEX_ACTUACIONES.includes(act);
+});
+
+/** Obtener la foto del jugador (featured media o ACF) */
+function getJugadorFoto(j: WpJugador): string | undefined {
+  return j._embedded?.['wp:featuredmedia']?.[0]?.source_url
+    || j.acf?.foto as string | undefined
+    || j.acf?.image as string | undefined
+    || undefined;
+}
+
+/** Obtener el nombre del jugador */
+function getJugadorNombre(j: WpJugador): string {
+  return j.acf?.nombre || j.title.rendered.replace(/<[^>]+>/g, '').trim();
+}
+
+/** Obtener liga/equipo del jugador */
+function getJugadorLiga(j: WpJugador): string {
+  return j.acf?.liga || j.acf?.league || j.acf?.equipo || j.acf?.team || '';
+}
+
+/** Puntuación del jugador (número o string) */
+function getPuntuacion(j: WpJugador): string | number | null {
+  const raw = j.acf?.puntuacion;
+  if (raw === undefined || raw === null || raw === '') return null;
+  if (typeof raw === 'number') return raw;
+  const s = String(raw).trim();
+  return s === '' ? null : s;
+}
+
+/** Clase de fondo para la cápsula de puntuación según el valor */
+function getPuntuacionCapsuleClass(puntuacion: string | number): string {
+  const n = typeof puntuacion === 'number' ? puntuacion : parseFloat(String(puntuacion).replace(',', '.'));
+  if (Number.isNaN(n)) return 'bg-slate-500/30 text-white';
+  if (n < 5) return 'bg-red-500/90 text-white';
+  if (n < 7) return 'bg-amber-500/90 text-slate-900';
+  if (n <= 8.5) return 'bg-green-500/90 text-white';
+  return 'bg-blue-500/90 text-white';
+}
+
+const equiposFutVE = (equiposProp ?? []).slice(0, 30);
+const partidos = (partidosProp ?? []);
+
+/** Mapa de nombre de equipo (lowercase) → datos del CPT (escudo, etc.) */
+const equipoMap = new Map<string, typeof equiposFutVE[number]>();
+for (const eq of equiposFutVE) {
+  const name = eq.title.rendered.replace(/<[^>]+>/g, '').trim().toLowerCase();
+  equipoMap.set(name, eq);
+}
+
+/** Buscar escudo cruzando con el CPT EquiposFutVE */
+function findEscudo(nombreEquipo: string): string | undefined {
+  const eq = equipoMap.get(nombreEquipo.toLowerCase());
+  if (!eq) return undefined;
+  return eq.acf?.escudo_url || eq._embedded?.['wp:featuredmedia']?.[0]?.source_url || undefined;
+}
+
+/** Parsear marcador "X - Y" → [number, number] o null si es "vs" */
+function parseMarcador(m?: string): [number, number] | null {
+  if (!m || m.trim().toLowerCase() === 'vs') return null;
+  const parts = m.split('-').map(s => s.trim());
+  if (parts.length !== 2) return null;
+  const a = parseInt(parts[0], 10);
+  const b = parseInt(parts[1], 10);
+  if (isNaN(a) || isNaN(b)) return null;
+  return [a, b];
+}
+
+/** Standings desde JSON de posiciones (datos_posiciones_json) */
+const posicionesRaw = posicionesProp ?? [];
+
+type StandingRow = {
+  rank: number;
+  team: string;
+  iniciales: string;
+  color?: string;
+  points: number;
+  pj: number;
+  dg: number;
+  logo?: string;
+};
+
+const standingsData: StandingRow[] = posicionesRaw.map((pos) => {
+  const nombre = pos.equipo?.nombre ?? '';
+  const iniciales = pos.equipo?.iniciales ?? nombre.slice(0, 3).toUpperCase();
+  const color = pos.equipo?.color ?? undefined;
+  const logo = findEscudo(nombre);
+  return {
+    rank: pos.posicion ?? 0,
+    team: nombre || 'Equipo',
+    iniciales,
+    color,
+    points: Number(pos.pts ?? 0) || 0,
+    pj: Number(pos.pj ?? 0) || 0,
+    dg: Number(pos.dg ?? 0) || 0,
+    logo,
+  };
+});
+
+const INITIAL_ROWS = 5;
+const standingsVisible = standingsData.slice(0, INITIAL_ROWS);
+const standingsMore = standingsData.slice(INITIAL_ROWS);
+const hasMore = standingsMore.length > 0;
+---
+<div class="flex flex-col gap-8">
+  <!-- Live Scores — Slider -->
+  <div class="bg-card-dark rounded-xl border border-white/10 overflow-hidden">
+    <!-- Header -->
+    <div class="px-5 pt-5 pb-3">
+      <h3 class="text-lg font-black text-white font-display">Resultados y próximos partidos</h3>
+    </div>
+
+    {partidos.length > 0 ? (
+      <section
+        id="resultados-slider"
+        class="splide resultados-splide"
+        aria-label="Resultados de partidos"
+      >
+        <div class="splide__track">
+          <ul class="splide__list">
+            {partidos.map((p) => {
+              const local = p.local;
+              const visitante = p.visitante;
+              const homeName = local?.nombre ?? '';
+              const awayName = visitante?.nombre ?? '';
+              const homeInit = local?.iniciales ?? homeName.slice(0, 3).toUpperCase();
+              const awayInit = visitante?.iniciales ?? awayName.slice(0, 3).toUpperCase();
+              const homeColor = local?.color ?? undefined;
+              const awayColor = visitante?.color ?? undefined;
+              const homeLogo = findEscudo(homeName);
+              const awayLogo = findEscudo(awayName);
+              const score = parseMarcador(p.marcador);
+              const liga = (p.liga ?? 'Liga FUTVE').trim();
+              const estado = (p.estado ?? '').trim();
+              return (
+                <li class="splide__slide">
+                  <div class="px-5 pb-5">
+                    {/* Cabecera: liga + estado */}
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-gold">{liga}</span>
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{estado}</span>
+                    </div>
+
+                    {/* Enfrentamiento: Logo - Marcador - Logo */}
+                    <div class="flex items-center justify-between gap-2">
+                      {/* Equipo local */}
+                      <div class="flex-1 flex flex-col items-center gap-2 min-w-0">
+                        <div
+                          class="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-white/10 flex items-center justify-center bg-white"
+                        >
+                          {homeLogo ? (
+                            <img src={homeLogo} alt={homeName} class="w-full h-full object-contain p-1" loading="lazy" />
+                          ) : (
+                            <span class="text-sm font-black text-white">{homeInit}</span>
+                          )}
+                        </div>
+                        <span class="text-white font-bold text-xs text-center truncate w-full">{homeName}</span>
+                      </div>
+
+                      {/* Marcador */}
+                      <div class="shrink-0 flex items-center justify-center gap-2 px-2">
+                        {score ? (
+                          <div class="flex items-center gap-2">
+                            <span class="text-white font-black text-2xl font-mono">{score[0]}</span>
+                            <span class="text-slate-500 font-bold text-lg">-</span>
+                            <span class="text-white font-black text-2xl font-mono">{score[1]}</span>
+                          </div>
+                        ) : (
+                          <span class="text-slate-400 font-bold text-sm uppercase">vs</span>
+                        )}
+                      </div>
+
+                      {/* Equipo visitante */}
+                      <div class="flex-1 flex flex-col items-center gap-2 min-w-0">
+                        <div
+                          class="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-white/10 flex items-center justify-center bg-white"
+                        >
+                          {awayLogo ? (
+                            <img src={awayLogo} alt={awayName} class="w-full h-full object-contain p-1" loading="lazy" />
+                          ) : (
+                            <span class="text-sm font-black text-white">{awayInit}</span>
+                          )}
+                        </div>
+                        <span class="text-white font-bold text-xs text-center truncate w-full">{awayName}</span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+    ) : (
+      <p class="text-xs text-slate-400 text-center px-5 pb-5">No hay partidos registrados aún.</p>
+    )}
+  </div>
+
+  <!-- Liga FUTVE Standings (desde CPT EquiposFutVE) -->
+  <div class="bg-card-dark rounded-xl p-6 border border-white/10" data-standings-widget>
+    <h3 class="text-xl font-black text-white mb-6 font-display">Posiciones Liga FUTVE</h3>
+    {standingsData.length > 0 ? (
+      <div class="overflow-hidden">
+        <table class="w-full text-sm text-left">
+          <thead class="text-[10px] text-slate-400 uppercase tracking-widest border-b border-white/10">
+            <tr>
+              <th class="px-1.5 py-3 font-semibold text-white">#</th>
+              <th class="px-1.5 py-3 font-semibold text-white">Equipo</th>
+              <th class="px-1.5 py-3 font-semibold text-center text-white">PJ</th>
+              <th class="px-1.5 py-3 font-semibold text-center text-white">DG</th>
+              <th class="px-1.5 py-3 font-semibold text-right text-white">Pts</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/10 font-sans">
+            {standingsVisible.map((row) => (
+              <tr class="hover:bg-surface-muted transition-colors">
+                <td class:list={[row.rank === 1 ? 'text-gold' : 'text-slate-400', 'px-1.5 py-3 font-bold text-xs']}>
+                  {row.rank}
+                </td>
+                <td class="px-1.5 py-3 text-white font-medium">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-6 h-6 shrink-0 rounded-full overflow-hidden flex items-center justify-center"
+                      class:list={[row.logo ? 'bg-white' : '']}
+                      style={!row.logo && row.color ? `background-color:${row.color}` : !row.logo ? 'background-color:rgba(255,255,255,0.1)' : undefined}
+                    >
+                      {row.logo ? (
+                        <img src={row.logo} alt={row.team} class="w-full h-full object-contain" loading="lazy" />
+                      ) : (
+                        <span class="text-[7px] font-bold text-white">{row.iniciales}</span>
+                      )}
+                    </div>
+                    <span class="truncate text-xs">{row.team}</span>
+                  </div>
+                </td>
+                <td class="px-1.5 py-3 text-slate-400 text-center text-xs">{row.pj}</td>
+                <td class:list={['px-1.5 py-3 text-center text-xs font-medium', row.dg > 0 ? 'text-green-400' : row.dg < 0 ? 'text-red-400' : 'text-slate-400']}>
+                  {row.dg > 0 ? `+${row.dg}` : row.dg}
+                </td>
+                <td class="px-1.5 py-3 text-white text-right font-bold text-xs">{row.points}</td>
+              </tr>
+            ))}
+          </tbody>
+          {hasMore && (
+            <tbody id="standings-more" class="divide-y divide-white/10 font-sans hidden" aria-hidden="true">
+              {standingsMore.map((row) => (
+                <tr class="hover:bg-surface-muted transition-colors">
+                  <td class:list={[row.rank === 1 ? 'text-gold' : 'text-slate-400', 'px-1.5 py-3 font-bold text-xs']}>
+                    {row.rank}
+                  </td>
+                  <td class="px-1.5 py-3 text-white font-medium">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-6 h-6 shrink-0 rounded-full overflow-hidden flex items-center justify-center"
+                        class:list={[row.logo ? 'bg-white' : '']}
+                        style={!row.logo && row.color ? `background-color:${row.color}` : !row.logo ? 'background-color:rgba(255,255,255,0.1)' : undefined}
+                      >
+                        {row.logo ? (
+                          <img src={row.logo} alt={row.team} class="w-full h-full object-contain" loading="lazy" />
+                        ) : (
+                          <span class="text-[7px] font-bold text-white">{row.iniciales}</span>
+                        )}
+                      </div>
+                      <span class="truncate text-xs">{row.team}</span>
+                    </div>
+                  </td>
+                  <td class="px-1.5 py-3 text-slate-400 text-center text-xs">{row.pj}</td>
+                  <td class:list={['px-1.5 py-3 text-center text-xs font-medium', row.dg > 0 ? 'text-green-400' : row.dg < 0 ? 'text-red-400' : 'text-slate-400']}>
+                    {row.dg > 0 ? `+${row.dg}` : row.dg}
+                  </td>
+                  <td class="px-1.5 py-3 text-white text-right font-bold text-xs">{row.points}</td>
+                </tr>
+              ))}
+            </tbody>
+          )}
+        </table>
+      </div>
+    ) : (
+      <p class="text-xs text-slate-400 text-center py-4">No hay equipos registrados aún.</p>
+    )}
+    {hasMore && (
+      <button
+        type="button"
+        id="standings-toggle"
+        class="w-full mt-6 py-2.5 text-xs font-bold text-slate-900 bg-gold hover:bg-gold/90 rounded-xl transition-all font-sans border border-gold/30 text-center cursor-pointer"
+        aria-expanded="false"
+        aria-controls="standings-more"
+      >
+        Ver tabla completa
+      </button>
+    )}
+  </div>
+
+  <script>
+    (function () {
+      const btn = document.getElementById('standings-toggle');
+      const more = document.getElementById('standings-more');
+      if (!btn || !more) return;
+      btn.addEventListener('click', function () {
+        const expanded = more.classList.toggle('hidden');
+        more.setAttribute('aria-hidden', String(expanded));
+        btn.setAttribute('aria-expanded', String(!expanded));
+        btn.textContent = expanded ? 'Ver tabla completa' : 'Ver menos';
+      });
+    })();
+  </script>
+
+  <script>
+    function initResultadosSlider() {
+      if (typeof window.Splide === 'undefined') {
+        setTimeout(initResultadosSlider, 50);
+        return;
+      }
+      const el = document.getElementById('resultados-slider');
+      if (!el || el.classList.contains('is-initialized')) return;
+      new window.Splide(el, {
+        type: 'loop',
+        perPage: 1,
+        autoplay: true,
+        interval: 7000,
+        pauseOnHover: true,
+        pauseOnFocus: true,
+        arrows: false,
+        pagination: false,
+        drag: true,
+        speed: 600,
+        i18n: {
+          prev: 'Anterior',
+          next: 'Siguiente',
+          slideX: 'Resultado %s',
+          pageX: 'Página %s',
+        },
+      }).mount();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initResultadosSlider);
+    } else {
+      initResultadosSlider();
+    }
+    document.addEventListener('astro:page-load', initResultadosSlider);
+  </script>
+
+  <!-- Newsletter -->
+  <div class="bg-card-dark rounded-xl p-8 text-center relative overflow-hidden group border border-white/10">
+    <div class="absolute top-0 right-0 p-4 opacity-10 rotate-12 transition-transform group-hover:scale-110" aria-hidden="true">
+      <span class="material-symbols-outlined text-8xl text-white">sports_soccer</span>
+    </div>
+    <div class="relative z-10">
+      <span class="material-symbols-outlined text-5xl text-white mb-4 block">alternate_email</span>
+      <h3 class="text-2xl font-black text-white mb-3 font-display">No te pierdas un gol</h3>
+      <p class="text-slate-400 text-sm font-sans mb-6">Recibe las últimas de la Vinotinto y resúmenes de partidos en tu correo.</p>
+      <form class="space-y-3" action="#" method="post">
+        <input
+          type="email"
+          placeholder="Tu correo"
+          class="w-full rounded-xl border-none bg-white px-4 py-3 text-sm text-slate-900 mb-2 focus:ring-4 focus:ring-gold/30 font-sans shadow-inner"
+          aria-label="Correo para suscripción"
+        />
+        <button type="submit" class="w-full bg-primary text-white font-bold text-sm py-3 rounded-xl hover:bg-primary-dark transition-all border border-gold/20 shadow-lg font-sans">
+          Suscribirse
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Venex de la semana (jugadores con actuación destacada o MVP) -->
+  {venexJugadores.length > 0 && (
+    <div class="bg-card-dark rounded-xl p-6 border border-white/10 relative overflow-hidden group">
+      <div class="absolute -right-12 -bottom-12 opacity-[0.05] rotate-12 text-slate-400" aria-hidden="true">
+        <span class="material-symbols-outlined text-7xl">public</span>
+      </div>
+      <div class="relative z-10">
+        <h3 class="text-xl font-black text-white mb-4 font-display flex items-center gap-3">
+          <span class="w-2 h-10 bg-gold rounded-full shrink-0" aria-hidden="true"></span>
+          Venex de la semana
+        </h3>
+        <div class="flex flex-col gap-3">
+          {venexJugadores.map((j) => {
+            const nombre = getJugadorNombre(j);
+            const foto = getJugadorFoto(j);
+            const liga = getJugadorLiga(j);
+            const actuacion = (j.acf?.actuacion ?? '').toString().trim();
+            const url = j.acf?.url_de_referencia || '/los-nuestros';
+            const isMvp = actuacion.toLowerCase() === 'mvp';
+            const puntuacion = getPuntuacion(j);
+            const rival = (j.acf?.rival ?? j.acf?.opponent ?? '').toString().trim();
+            return (
+              <a href={url} target={j.acf?.url_de_referencia ? '_blank' : undefined} rel={j.acf?.url_de_referencia ? 'noopener noreferrer' : undefined} class="flex items-center gap-3 rounded-xl p-3 border border-white/10 bg-white/5 hover:border-gold/30 transition-all">
+                <div class="w-12 h-12 shrink-0 rounded-full overflow-hidden border-2 border-primary/20">
+                  {foto ? (
+                    <img src={foto} alt={nombre} class="w-full h-full object-cover" width="48" height="48" loading="lazy" />
+                  ) : (
+                    <div class="w-full h-full bg-primary/20 flex items-center justify-center">
+                      <span class="text-white text-xs font-bold">{nombre.slice(0, 2).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <div class="min-w-0 flex-1 flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <h5 class="text-white font-bold text-sm font-display truncate">{nombre}</h5>
+                      {isMvp && <span class="text-[9px] bg-gold text-slate-900 font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">MVP</span>}
+                    </div>
+                    {rival && (
+                      <p class="text-[10px] mt-0.5 font-sans">
+                        <span class="text-white/70 font-bold">VS</span>
+                        <span class="text-gold font-bold uppercase tracking-widest ml-1">{rival}</span>
+                      </p>
+                    )}
+                  </div>
+                  {puntuacion !== null && (
+                    <div class="flex flex-col items-center shrink-0 gap-1">
+                      <span class="text-[10px] text-slate-400 uppercase font-bold font-sans">Puntuación</span>
+                      <span class:list={['inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-bold font-sans', getPuntuacionCapsuleClass(puntuacion)]}>
+                        {puntuacion}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+        <a href="/los-nuestros" class="block mt-4 text-center text-gold text-xs font-bold hover:text-white transition-colors font-sans uppercase tracking-widest">
+          Ver todos los jugadores →
+        </a>
+      </div>
+    </div>
+  )}
+
+  <!-- Apoya nuestro trabajo -->
+  <div class="bg-card-dark rounded-xl p-6 border border-white/10 text-center relative overflow-hidden group">
+    <div class="absolute top-0 right-0 p-2 opacity-10 rotate-12" aria-hidden="true">
+      <span class="material-symbols-outlined text-5xl text-white">volunteer_activism</span>
+    </div>
+    <div class="relative z-10">
+      <span class="material-symbols-outlined text-4xl text-gold mb-3 block" aria-hidden="true">savings</span>
+      <h3 class="text-lg font-black text-white mb-2 font-display">Apoya nuestro trabajo</h3>
+      <p class="text-slate-400 text-xs font-sans mb-4">
+        Tu donación ayuda a mantener Fútbol Chimó.
+      </p>
+      <a
+        href="#"
+        class="inline-block w-full bg-gold text-slate-900 font-bold text-sm py-2.5 px-4 rounded-xl hover:bg-gold/90 transition-all border border-gold/30 font-sans"
+      >
+        Haz una donación
+      </a>
+    </div>
+  </div>
+</div>

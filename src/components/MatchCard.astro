@@ -1,0 +1,48 @@
+---
+/** Tarjeta de próximo partido (estructura data-hub, estilos vinotinto) */
+import type { MatchDetails } from '../data/selecciones';
+
+interface Props {
+  match: MatchDetails;
+  /** 'default' | 'compact' (para colocar a la derecha del título de sección) */
+  variant?: 'default' | 'compact';
+}
+
+const { match, variant = 'default' } = Astro.props;
+---
+
+<article class:list={[
+  'group cursor-pointer bg-card-dark rounded-xl border border-white/10 flex hover:border-gold/30 transition-all',
+  variant === 'compact'
+    ? 'flex-col gap-0.5 py-1.5 px-3 min-w-[220px] max-w-[280px]'
+    : 'flex-col justify-center p-5',
+]} aria-label={`${match.label}: ${match.home} vs ${match.away}`}>
+  {variant === 'compact' ? (
+    <>
+      <span class="text-[9px] text-gold font-bold uppercase tracking-wider font-sans">
+        {match.label}
+        {match.date && <span class="text-slate-400 font-normal normal-case ml-1">· {match.date}</span>}
+      </span>
+      <p class="text-slate-300 font-sans text-[11px] leading-tight">
+        <span class="font-black text-white font-display">{match.home} vs {match.away}</span>
+        <span class="text-slate-400 mx-1">·</span>
+        <span>{match.venue} <span class="text-white font-bold">{match.time}</span></span>
+      </p>
+    </>
+  ) : (
+    <>
+      <span class="text-[10px] text-gold font-bold uppercase mb-2 tracking-wider font-sans">
+        {match.label}
+        {match.date && <span class="text-slate-400 font-normal normal-case ml-1">· {match.date}</span>}
+      </span>
+      <div class="flex flex-col gap-0.5">
+        <p class="text-xl font-black leading-none text-white font-display">
+          {match.home} <span class="text-slate-500 text-sm font-sans font-normal">vs</span> {match.away}
+        </p>
+        <p class="text-slate-400 text-xs mt-2 border-t border-white/10 pt-2 font-sans">
+          {match.venue} <span class="mx-0.5">|</span> <span class="text-white font-bold">{match.time}</span>
+        </p>
+      </div>
+    </>
+  )}
+</article>

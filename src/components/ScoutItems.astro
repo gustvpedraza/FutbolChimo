@@ -1,0 +1,20 @@
+---
+/** Lista de ítems tipo scouting (estructura data-hub, estilos vinotinto) */
+import type { ScoutItem } from '../data/selecciones';
+
+interface Props {
+  items: ScoutItem[];
+}
+const { items } = Astro.props;
+---
+
+<div class="space-y-2 mt-1">
+  {items.map((item: ScoutItem) => (
+    <div
+      class={`flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group border border-transparent hover:border-white/10`}
+    >
+      <span class={`w-2 h-2 rounded-full shrink-0 ${item.colorClass} group-hover:scale-125 transition-transform`} aria-hidden="true" />
+      <p class="text-xs font-medium text-slate-300 group-hover:text-white font-sans">{item.text}</p>
+    </div>
+  ))}
+</div>

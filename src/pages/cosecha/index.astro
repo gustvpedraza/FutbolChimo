@@ -1,0 +1,35 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProspectoCard from '../../components/ProspectoCard.astro';
+import { wpApi } from '../../lib/wordpress';
+
+let prospectos: import('../../types/wordpress').WpProspecto[] = [];
+try {
+  prospectos = await wpApi.getProspectos({ per_page: 24 });
+} catch {
+  prospectos = [];
+}
+---
+
+<Layout title="Cosecha | Fútbol Chimó" description="Base de datos de prospectos del fútbol venezolano">
+  <article class="space-y-12">
+    <header>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Cosecha</h1>
+      <p class="mt-2 text-white/60">Base de datos de prospectos del fútbol venezolano.</p>
+    </header>
+
+    {prospectos.length > 0 ? (
+      <ul class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" role="list">
+        {prospectos.map((p) => (
+          <li>
+            <ProspectoCard prospecto={p} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="rounded-xl border border-white/10 bg-white/5 p-8 text-center text-white/60">
+        No hay prospectos cargados. Registra el CPT <strong>prospectos</strong> en WordPress y añade jugadores.
+      </p>
+    )}
+  </article>
+</Layout>

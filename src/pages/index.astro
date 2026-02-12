@@ -1,0 +1,81 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import NewsCard from '../components/NewsCard.astro';
+import SectionTitle from '../components/SectionTitle.astro';
+import Sidebar from '../components/Sidebar.astro';
+import { wpApi } from '../lib/wordpress';
+import type { PartidoLigaFutve, PosicionLigaFutve } from '../lib/wordpress';
+import { MOCK_POSTS, MOCK_FEATURED } from '../lib/mockPosts';
+
+type WpPostEmbedded = import('../types/wordpress').WpPostEmbedded;
+type WpEquipoFutVE = import('../types/wordpress').WpEquipoFutVE;
+type WpJugador = import('../types/wordpress').WpJugador;
+
+let featuredFromCategory: WpPostEmbedded[] = [];
+let latest: Awaited<ReturnType<typeof wpApi.getPosts>> = [];
+let equiposFutVE: WpEquipoFutVE[] = [];
+let partidosLigaFutve: PartidoLigaFutve[] = [];
+let posicionesLigaFutve: PosicionLigaFutve[] = [];
+let jugadores: WpJugador[] = [];
+
+try {
+  const [featuredResult, latestList, equipos, partidos, posiciones, jugadoresAll] = await Promise.all([
+    wpApi.getPostsByCategorySlug('en-portada', { per_page: 1 }),
+    wpApi.getPosts({ per_page: 12, _embed: true }),
+    wpApi.getEquiposFutVE({ per_page: 30, _embed: true }),
+    wpApi.getResultadosLigaFutve(),
+    wpApi.getPosicionesLigaFutve(),
+    wpApi.getJugadores({ per_page: 50 }),
+  ]);
+  featuredFromCategory = featuredResult.posts;
+  latest = latestList;
+  equiposFutVE = equipos;
+  partidosLigaFutve = partidos;
+  posicionesLigaFutve = posiciones;
+  jugadores = jugadoresAll;
+} catch {
+  featuredFromCategory = [];
+  latest = [];
+  equiposFutVE = [];
+  partidosLigaFutve = [];
+  posicionesLigaFutve = [];
+  jugadores = [];
+}
+
+const hasRealPosts = latest.length > 0;
+const latestEmbedded = hasRealPosts ? (latest as WpPostEmbedded[]) : MOCK_POSTS;
+/** Post principal: el que tiene la categoría "En portada" (slug en-portada) */
+const featuredPost = featuredFromCategory[0] ?? (hasRealPosts ? null : MOCK_FEATURED);
+
+/** Una sola noticia principal en el hero */
+const mainPost = featuredPost ?? latestEmbedded[0] ?? null;
+/** Resto de posts (todas las que no son la principal) para "Últimas noticias" */
+const restPosts = mainPost ? latestEmbedded.filter((p) => p.id !== mainPost.id) : latestEmbedded;
+
+---
+
+<Layout title="Fútbol Chimó" description="Blog premium sobre fútbol venezolano" hasSidebar={true}>
+  <!-- Columna principal (lg:col-span-8) - 1 noticia grande estilo futbolve -->
+  <section>
+    <Hero post={mainPost} />
+  </section>
+
+  <section>
+    <SectionTitle title="Últimas noticias" subtitle="Todo sobre La Vinotinto y el fútbol venezolano" />
+    {restPosts.length > 0 ? (
+      <ul class="grid grid-cols-1 md:grid-cols-2 gap-8" role="list">
+        {restPosts.map((post) => (
+          <li>
+            <NewsCard post={post} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="rounded-xl border border-white/10 bg-card-dark py-12 text-center text-slate-400 font-sans">
+        No hay más noticias. Publica en WordPress para verlas aquí.
+      </p>
+    )}
+  </section>
+  <Sidebar slot="sidebar" equipos={equiposFutVE} partidos={partidosLigaFutve} posiciones={posicionesLigaFutve} jugadores={jugadores} />
+</Layout>

@@ -1,0 +1,117 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NewsCarousel from '../components/NewsCarousel.astro';
+import SectionTitle from '../components/SectionTitle.astro';
+import ResultadosStandings from '../components/ResultadosStandings.astro';
+import { wpApi } from '../lib/wordpress';
+import type { PartidoLigaFutve, PosicionLigaFutve } from '../lib/wordpress';
+import { MOCK_POSTS } from '../lib/mockPosts';
+import type { WpPostEmbedded } from '../types/wordpress';
+
+/** Obtiene hasta N posts por categoría; si falla, usa slice del pool */
+async function getPostsByCategory(
+  categorySlug: string,
+  fallbackPool: WpPostEmbedded[],
+  fallbackStart: number,
+  perPage: number
+): Promise<WpPostEmbedded[]> {
+  try {
+    const { posts } = await wpApi.getPostsByCategorySlug(categorySlug, { per_page: perPage });
+    if (posts.length > 0) return posts as WpPostEmbedded[];
+  } catch {
+    // ignore
+  }
+  return fallbackPool.slice(fallbackStart, fallbackStart + perPage);
+}
+
+let fallbackPool: WpPostEmbedded[] = [];
+try {
+  const latest = await wpApi.getPosts({ per_page: 40, _embed: true });
+  fallbackPool = (latest as WpPostEmbedded[]).length > 0 ? (latest as WpPostEmbedded[]) : MOCK_POSTS;
+} catch {
+  fallbackPool = MOCK_POSTS;
+}
+
+/** Posts por categoría + datos Vinotinto Mayor */
+let vinotintoMayorPartidos: PartidoLigaFutve[] = [];
+let vinotintoMayorPosiciones: PosicionLigaFutve[] = [];
+
+const [mayorPosts, femeninoPosts, juvenilesPosts] = await Promise.all([
+  getPostsByCategory('la-mayor', fallbackPool, 0, 5),
+  getPostsByCategory('femenino', fallbackPool, 5, 3),
+  getPostsByCategory('juveniles', fallbackPool, 8, 5),
+]);
+
+try {
+  const [partidos, posiciones] = await Promise.all([
+    wpApi.getVinotintoMayorPartidos(),
+    wpApi.getVinotintoMayorPosiciones(),
+  ]);
+  vinotintoMayorPartidos = partidos;
+  vinotintoMayorPosiciones = posiciones;
+} catch {
+  vinotintoMayorPartidos = [];
+  vinotintoMayorPosiciones = [];
+}
+---
+
+<Layout
+  title="Selecciones | Fútbol Chimó"
+  description="Noticias de la Vinotinto: Selección Mayor, Femenino y Juveniles."
+  hasSidebar={false}
+>
+  <article class="flex flex-col">
+    <main class="flex flex-col gap-12">
+      <!-- La Mayor: card con título + próximo partido + carrusel -->
+      <section class="border-b border-white/10 pb-10" aria-labelledby="section-mayor">
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 mt-0 items-stretch">
+          <div class="min-w-0 h-full flex flex-col">
+            <div class="bg-card-dark rounded-xl border border-white/10 p-6 h-full flex flex-col min-h-0">
+              <SectionTitle id="section-mayor" title="La Mayor" />
+              <div class="flex-1 min-h-0 flex flex-col justify-center">
+                <div class="w-full">
+                  <NewsCarousel carouselId="mayor-carousel" posts={mayorPosts} cardVariant="large" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside class="lg:min-w-[340px] flex flex-col min-h-0">
+            <ResultadosStandings
+              partidos={vinotintoMayorPartidos}
+              posiciones={vinotintoMayorPosiciones}
+              tituloResultados="Resultados y próximos partidos"
+              tituloPosiciones="Eliminatorias Conmebol"
+              id="mayor"
+            />
+          </aside>
+        </div>
+      </section>
+
+      <!-- Femenino + Juveniles: 2 columnas -->
+      <section class="border-b border-white/10 pb-10">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="min-w-0 h-full flex flex-col">
+            <div class="bg-card-dark rounded-xl border border-white/10 p-6 h-full flex flex-col min-h-0">
+              <SectionTitle id="section-femenino" title="Femenino" size="sm" />
+              <div class="flex-1 min-h-0 flex flex-col justify-center">
+                <div class="w-full">
+                  <NewsCarousel carouselId="femenino-carousel" posts={femeninoPosts} cardVariant="horizontal" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="min-w-0 h-full flex flex-col">
+            <div class="bg-card-dark rounded-xl border border-white/10 p-6 h-full flex flex-col min-h-0">
+              <SectionTitle id="section-juveniles" title="Juveniles" size="sm" />
+              <div class="flex-1 min-h-0 flex flex-col justify-center">
+                <div class="w-full">
+                  <NewsCarousel carouselId="juveniles-carousel" posts={juvenilesPosts} cardVariant="horizontal" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </article>
+</Layout>

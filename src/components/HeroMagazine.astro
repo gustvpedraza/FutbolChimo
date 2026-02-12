@@ -1,0 +1,86 @@
+---
+import type { WpPostEmbedded } from '../types/wordpress';
+import { getFeaturedImageUrl, formatDate, getFirstCategoryName } from '../lib/utils';
+
+interface Props {
+  /** Post principal del hero (grande) */
+  mainPost: WpPostEmbedded | null;
+  /** 3 posts para la columna lateral */
+  sidePosts: WpPostEmbedded[];
+}
+
+const { mainPost, sidePosts } = Astro.props;
+const mainImage = mainPost ? getFeaturedImageUrl(mainPost) : null;
+---
+<section class="grid gap-4 lg:grid-cols-3 lg:gap-5">
+  <!-- Destacado principal (2/3) -->
+  <div class="lg:col-span-2">
+    {mainPost ? (
+      <a href={`/noticias/${mainPost.slug}`} class="group relative block overflow-hidden rounded-2xl bg-primary shadow-2xl shadow-black/50">
+        <div class="relative aspect-[16/10] w-full lg:aspect-[16/9]">
+          {mainImage ? (
+            <img
+              src={mainImage}
+              alt=""
+              class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="eager"
+            />
+          ) : (
+            <div class="h-full w-full bg-primary" aria-hidden="true" />
+          )}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" aria-hidden="true" />
+        </div>
+        <div class="absolute inset-x-0 bottom-0 p-6 md:p-10 lg:p-12 z-10">
+          <span class="inline-block bg-gold text-slate-900 text-xs font-bold px-2 py-1 rounded-lg mb-4 uppercase tracking-widest font-sans">
+            Destacado
+          </span>
+          <h2 class="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-4 drop-shadow-lg font-display max-w-4xl line-clamp-2 group-hover:text-gold transition-colors">
+            {mainPost.title.rendered}
+          </h2>
+          <p class="text-slate-300 text-base md:text-lg max-w-2xl mb-6 font-sans leading-relaxed line-clamp-2" set:html={mainPost.excerpt.rendered} />
+          <span class="inline-flex items-center gap-2 text-white font-bold hover:text-gold transition-colors font-sans group/btn">
+            Leer más
+            <span class="material-symbols-outlined text-xl transition-transform group-hover/btn:translate-x-1">arrow_right_alt</span>
+          </span>
+        </div>
+      </a>
+    ) : (
+      <div class="flex aspect-[16/10] items-center justify-center rounded-xl bg-card-dark border border-white/10 lg:aspect-[16/9]">
+        <p class="px-6 text-center text-slate-400">
+          Añade un post con etiqueta <strong class="text-slate-300">destacado</strong> en WordPress para verlo aquí.
+        </p>
+      </div>
+    )}
+  </div>
+
+  <!-- Columna lateral (1/3) - 3 posts compactos -->
+  <div class="flex flex-col gap-3 sm:flex-row lg:flex-col lg:gap-4">
+    {sidePosts.slice(0, 3).map((post, i) => {
+      const img = getFeaturedImageUrl(post);
+      const cat = getFirstCategoryName(post);
+      return (
+        <a href={`/noticias/${post.slug}`} class="group flex flex-1 gap-3 rounded-xl border border-white/10 bg-card-dark overflow-hidden transition-all hover:border-gold/30 hover:bg-white/5">
+          <div class="h-24 w-28 shrink-0 overflow-hidden bg-black/40 sm:h-28 sm:w-36">
+            {img ? (
+              <img src={img} alt="" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading={i === 0 ? 'eager' : 'lazy'} />
+            ) : (
+              <div class="h-full w-full bg-primary/20" aria-hidden="true" />
+            )}
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col justify-center py-3 pr-3">
+            {cat && <span class="text-gold text-[10px] font-bold uppercase tracking-widest font-sans">{cat}</span>}
+            <h3 class="mt-0.5 text-sm font-bold text-white line-clamp-2 group-hover:text-gold transition-colors font-display">
+              {post.title.rendered}
+            </h3>
+            <time class="mt-1 text-xs text-slate-400" datetime={post.date}>{formatDate(post.date)}</time>
+          </div>
+        </a>
+      );
+    })}
+    {sidePosts.length === 0 && (
+      <div class="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-card-dark py-8 text-center text-sm text-slate-400">
+        Más noticias aparecerán aquí
+      </div>
+    )}
+  </div>
+</section>

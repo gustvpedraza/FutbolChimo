@@ -1,0 +1,49 @@
+---
+/** Hero de una sola noticia destacada (estilo futbolve-news-portal) */
+import type { WpPostEmbedded } from '../types/wordpress';
+import { getFeaturedImageUrl, getFirstCategoryName } from '../lib/utils';
+
+interface Props {
+  post: WpPostEmbedded | null;
+}
+
+const { post } = Astro.props;
+const imageUrl = post ? getFeaturedImageUrl(post) : null;
+const category = post ? getFirstCategoryName(post) : null;
+---
+<section class="relative w-full rounded-2xl overflow-hidden group shadow-2xl shadow-black/50">
+  {post ? (
+    <a href={`/noticias/${post.slug}`} class="block cursor-pointer">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent z-10" aria-hidden="true"></div>
+      <div
+        class="w-full h-[500px] bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+        style={imageUrl ? `background-image: url('${imageUrl}')` : undefined}
+      >
+        {!imageUrl && <div class="w-full h-full bg-primary" aria-hidden="true" />}
+      </div>
+      <div class="absolute bottom-0 left-0 w-full p-8 md:p-12 z-20">
+        <span class="inline-block bg-gold text-slate-900 text-xs font-bold px-2 py-1 rounded-lg mb-4 uppercase tracking-widest font-sans">
+          {category ?? 'Destacado'}
+        </span>
+        <h2 class="text-3xl md:text-5xl font-black text-white leading-[1.1] mb-6 drop-shadow-lg font-display max-w-4xl group-hover:text-gold transition-colors">
+          {post.title.rendered}
+        </h2>
+        <div class="text-slate-300 text-lg md:text-xl max-w-2xl mb-8 font-sans leading-relaxed line-clamp-2 [&_p]:inline [&_p]:m-0" set:html={post.excerpt.rendered} />
+        <span class="inline-flex items-center gap-2 text-white font-bold hover:text-gold transition-all font-sans group/btn">
+          Leer más
+          <span class="material-symbols-outlined text-xl transition-transform group-hover/btn:translate-x-1">arrow_right_alt</span>
+        </span>
+      </div>
+    </a>
+  ) : (
+    <>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent z-10" aria-hidden="true"></div>
+      <div class="w-full h-[500px] bg-card-dark border border-white/10 rounded-xl" aria-hidden="true"></div>
+      <div class="absolute bottom-0 left-0 w-full p-8 md:p-12 z-20">
+        <p class="text-slate-400 font-sans max-w-xl">
+          Añade un post con etiqueta <strong>destacado</strong> en WordPress para ver la noticia principal aquí.
+        </p>
+      </div>
+    </>
+  )}
+</section>

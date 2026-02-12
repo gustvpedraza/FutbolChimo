@@ -1,0 +1,67 @@
+---
+/** Bloque Futsal Hub: imagen + texto + botones (estructura data-hub, estilos vinotinto) */
+import { getFeaturedImageUrl } from '../lib/utils';
+import type { WpPostEmbedded } from '../types/wordpress';
+import { FUTSAL_HUB } from '../data/selecciones';
+
+interface Props {
+  /** Post destacado de futsal (opcional); si no hay, se usa contenido estático */
+  post?: WpPostEmbedded | null;
+}
+
+const { post = null } = Astro.props;
+const imageUrl = post ? getFeaturedImageUrl(post) : null;
+const title = post ? post.title.rendered : FUTSAL_HUB.title;
+const rawExcerpt = post?.excerpt?.rendered?.replace(/<[^>]*>/g, '').trim() ?? '';
+const excerpt = post
+  ? (rawExcerpt.slice(0, 280) + (rawExcerpt.length > 280 ? '…' : '') || FUTSAL_HUB.excerpt)
+  : FUTSAL_HUB.excerpt;
+---
+
+<section class="bg-card-dark rounded-xl p-6 border border-white/10 relative overflow-hidden group" aria-labelledby="futsal-hub-title">
+  <div class="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none" aria-hidden="true">
+    <span class="material-symbols-outlined text-9xl text-white">sports_soccer</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-6 relative z-10">
+    <h2 id="futsal-hub-title" class="text-2xl font-black text-white font-display uppercase tracking-tight">Futsal Hub</h2>
+    <span class="text-[10px] font-bold bg-primary px-2 py-1 rounded-lg uppercase text-white">Mundialista</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+    <div class="lg:col-span-1 overflow-hidden rounded-xl">
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          class="w-full aspect-video lg:aspect-square object-cover rounded-xl hover:scale-105 transition-transform duration-700"
+          loading="lazy"
+        />
+      ) : (
+        <div class="w-full aspect-video lg:aspect-square bg-primary/20 rounded-xl flex items-center justify-center">
+          <span class="material-symbols-outlined text-5xl text-white/30">sports_soccer</span>
+        </div>
+      )}
+    </div>
+    <div class="lg:col-span-2 flex flex-col justify-center">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-gold font-bold text-xs uppercase tracking-wider font-sans">{FUTSAL_HUB.categoryLabel}</span>
+        <span class="w-10 h-px bg-white/10" aria-hidden="true" />
+      </div>
+      <h3 class="text-2xl md:text-3xl font-black text-white mb-3 leading-tight font-display">
+        {title}
+      </h3>
+      <p class="text-slate-400 text-sm md:text-base mb-6 max-w-2xl leading-relaxed font-sans">
+        {excerpt}
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <a href={post ? `/noticias/${post.slug}` : '#'} class="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors uppercase tracking-widest font-sans">
+          {FUTSAL_HUB.cronicaLabels.primary}
+        </a>
+        <a href="#" class="px-5 py-2.5 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5 transition-colors uppercase tracking-widest font-sans">
+          {FUTSAL_HUB.cronicaLabels.secondary}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

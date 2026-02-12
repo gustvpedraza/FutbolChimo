@@ -1,0 +1,111 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Contacto | Fútbol Chimó"
+  description="Escribe a Fútbol Chimó. Estamos para escucharte."
+  hasSidebar={false}
+>
+  <article class="flex flex-col">
+    <section class="py-6 border-b border-white/10 mb-10">
+      <h1 class="text-3xl md:text-4xl font-black text-white font-display flex items-center gap-3">
+        <span class="w-2 h-10 bg-gold rounded-full shrink-0" aria-hidden="true" />
+        Contacto
+      </h1>
+      <p class="text-slate-400 text-sm mt-1 font-sans">
+        Envíanos un mensaje y te responderemos lo antes posible.
+      </p>
+    </section>
+
+    <section class="max-w-2xl" aria-labelledby="contacto-heading">
+      <div class="bg-card-dark rounded-xl p-8 md:p-10 border border-white/10 relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-4 opacity-10 rotate-12" aria-hidden="true">
+          <span class="material-symbols-outlined text-8xl text-white">mail</span>
+        </div>
+        <div class="relative z-10">
+          <h2 id="contacto-heading" class="text-xl font-black text-white mb-6 font-display flex items-center gap-2">
+            <span class="material-symbols-outlined text-gold text-2xl">edit_note</span>
+            Formulario de contacto
+          </h2>
+          <form class="space-y-4 font-sans" action="#" method="post">
+            <div>
+              <label for="contacto-nombre" class="block text-sm font-bold text-slate-300 mb-1.5">Nombre</label>
+              <input
+                id="contacto-nombre"
+                type="text"
+                name="nombre"
+                required
+                placeholder="Tu nombre"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:ring-4 focus:ring-gold/30 focus:border-gold/50 font-sans transition-colors"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label for="contacto-correo" class="block text-sm font-bold text-slate-300 mb-1.5">Correo</label>
+              <input
+                id="contacto-correo"
+                type="email"
+                name="correo"
+                required
+                placeholder="tu@correo.com"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:ring-4 focus:ring-gold/30 focus:border-gold/50 font-sans transition-colors"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label for="contacto-ciudad" class="block text-sm font-bold text-slate-300 mb-1.5">Ciudad</label>
+              <input
+                id="contacto-ciudad"
+                type="text"
+                name="ciudad"
+                placeholder="Tu ciudad"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:ring-4 focus:ring-gold/30 focus:border-gold/50 font-sans transition-colors"
+              />
+            </div>
+            <div>
+              <label for="contacto-telefono" class="block text-sm font-bold text-slate-300 mb-1.5">Teléfono</label>
+              <input
+                id="contacto-telefono"
+                type="tel"
+                name="telefono"
+                placeholder="Ej. +58 412 1234567"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:ring-4 focus:ring-gold/30 focus:border-gold/50 font-sans transition-colors"
+              />
+            </div>
+            <div>
+              <label for="contacto-mensaje" class="block text-sm font-bold text-slate-300 mb-1.5">Mensaje</label>
+              <textarea
+                id="contacto-mensaje"
+                name="mensaje"
+                required
+                rows={5}
+                placeholder="Escribe tu mensaje..."
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:ring-4 focus:ring-gold/30 focus:border-gold/50 font-sans transition-colors resize-y min-h-[120px]"
+                aria-required="true"
+              />
+            </div>
+            <div class="flex items-center gap-3">
+              <input
+                id="contacto-newsletter"
+                type="checkbox"
+                name="newsletter"
+                value="1"
+                class="w-4 h-4 rounded border-white/20 bg-white/5 text-gold focus:ring-gold/30 focus:ring-2"
+              />
+              <label for="contacto-newsletter" class="text-sm text-slate-300 font-sans cursor-pointer">
+                Sí, deseo suscribirme también al newsletter
+              </label>
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-primary text-white font-bold text-sm py-3 rounded-xl hover:bg-primary-dark transition-all border border-gold/20 shadow-lg font-sans mt-2"
+            >
+              Enviar mensaje
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </article>
+</Layout>

@@ -1,0 +1,278 @@
+---
+import type { Legionario, LegionarioStatusType } from '../types/legionarios';
+import CompactLabelDate from './CompactLabelDate.astro';
+
+interface Props {
+  player: Legionario;
+}
+
+const { player } = Astro.props;
+const isInactive = player.status.type === 'not_called' || player.status.type === 'injured';
+
+/** Emoji y color de fondo del footer según actuación (el texto de actuación va siempre en blanco). */
+function getActuacionDisplay(actuacion: string | undefined, statusType: LegionarioStatusType): { emoji: string; footerBg: string } {
+  const key = actuacion?.toLowerCase().trim() ?? '';
+  switch (key) {
+    case 'titular':
+      return { emoji: '👕', footerBg: 'bg-chimo-green/20' };
+    case 'suplente':
+      return { emoji: '🔄', footerBg: 'bg-slate-500/15' };
+    case 'lesionado':
+      return { emoji: '🩹', footerBg: 'bg-primary/20' };
+    case 'suspendido':
+      return { emoji: '🚫', footerBg: 'bg-amber-500/20' };
+    case 'expulsado':
+      return { emoji: '🟥', footerBg: 'bg-primary/20' };
+    case 'no convocado':
+      return { emoji: '⏸️', footerBg: 'bg-slate-600/20' };
+    case 'actuación destacada':
+      return { emoji: '⭐', footerBg: 'bg-gold/20' };
+    case 'mvp':
+      return { emoji: '🏆', footerBg: 'bg-gold/20' };
+    default:
+      break;
+  }
+  if (actuacion) return { emoji: '➖', footerBg: 'bg-slate-500/15' };
+  switch (statusType) {
+    case 'available':
+    case 'starter':
+    case 'highlight':
+      return { emoji: '✓', footerBg: 'bg-chimo-green/20' };
+    case 'suspended':
+    case 'injured':
+    case 'not_called':
+      return { emoji: '—', footerBg: 'bg-primary/20' };
+    default:
+      return { emoji: '—', footerBg: 'bg-white/5' };
+  }
+}
+
+const actuacionDisplay = getActuacionDisplay(player.actuacion, player.status.type);
+const footerLabel = player.actuacion ?? player.status.label;
+
+/** Clase de fondo para la cápsula de puntuación según el valor */
+function getPuntuacionCapsuleClass(puntuacion: string | number): string {
+  const n = typeof puntuacion === 'number' ? puntuacion : parseFloat(String(puntuacion).replace(',', '.'));
+  if (Number.isNaN(n)) return 'bg-slate-500/30 text-white';
+  if (n < 5) return 'bg-red-500/90 text-white';
+  if (n < 7) return 'bg-amber-500/90 text-slate-900';
+  if (n <= 8.5) return 'bg-green-500/90 text-white';
+  return 'bg-blue-500/90 text-white';
+}
+
+const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== null && player.puntuacion !== '';
+---
+
+{player.urlDeReferencia ? (
+  <a
+    href={player.urlDeReferencia}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="block cursor-pointer"
+    aria-label={`Ver información de ${player.name}`}
+  >
+    <article class="group relative flex flex-col bg-card-dark border border-white/10 rounded-xl overflow-hidden hover:border-gold/30 hover:shadow-xl transition-all">
+  <!-- Puntuación: absolute, esquina superior izquierda -->
+  {hasPuntuacion && (
+    <div class="absolute top-0 left-0 z-10 pointer-events-none p-3">
+      <div class="flex flex-col items-center gap-0.5">
+        <span class="text-[9px] text-slate-400 uppercase font-bold font-sans tracking-wider">Puntuación</span>
+        <span class:list={['inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-bold font-sans', getPuntuacionCapsuleClass(player.puntuacion!)]}>
+          {player.puntuacion}
+        </span>
+      </div>
+    </div>
+  )}
+
+  <!-- Jornada + Fecha: absolute, pegado a top-right para no empujar contenido -->
+  {(player.matchday || player.fecha) ? (
+    <div class="absolute top-0 right-0 z-10 pointer-events-none">
+      <CompactLabelDate
+        label={player.matchday || 'Partido'}
+        date={player.fecha}
+        static
+      />
+    </div>
+  ) : null}
+
+  <!-- Foto y datos del jugador -->
+  <div class="p-6 pb-4 flex flex-col items-center text-center pt-6">
+    <div class="relative mb-4">
+      <div class:list={['w-24 h-24 border-2 transition-colors overflow-hidden rounded-full', isInactive ? 'border-primary/40 opacity-80' : 'border-white/20 group-hover:border-gold']}>
+        <img
+          src={player.image}
+          alt={player.name}
+          class:list={['w-full h-full object-cover', isInactive && 'grayscale']}
+          width="96"
+          height="96"
+          loading="lazy"
+        />
+      </div>
+      <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full overflow-hidden shadow border border-white/20">
+        <img
+          src={player.teamLogo}
+          alt={player.team}
+          class="w-full h-full object-contain"
+          width="32"
+          height="32"
+          loading="lazy"
+        />
+      </div>
+    </div>
+    <h3 class="text-xl font-black text-white group-hover:text-gold transition-colors font-display">
+      {player.name}
+    </h3>
+    <p class="text-xs font-bold text-gold uppercase tracking-widest mt-1 font-sans">
+      {player.rival ? (
+        <>
+          <span class="text-[10px] font-bold text-white/70 normal-case tracking-wide block">VS</span>
+          <span class="text-gold">{player.rival}</span>
+        </>
+      ) : (
+        <span>{player.team} • {player.league}</span>
+      )}
+    </p>
+  </div>
+
+  <!-- Stats: minutos, goles, asistencias (una línea) -->
+  <div class="border-t border-white/10 bg-white/5 p-5 flex flex-wrap justify-center items-center gap-6">
+    <div class="flex gap-2">
+      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">schedule</span>
+      <div>
+        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
+        <p class="font-bold text-white font-sans">{player.stats.minutes}</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">sports_soccer</span>
+      <div>
+        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles</p>
+        <p class:list={['font-bold font-sans', player.stats.goals === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.goals}</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">assist_walker</span>
+      <div>
+        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Asistencias</p>
+        <p class:list={['font-bold font-sans', player.stats.assists === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.assists}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado y actuación: texto siempre blanco, color según actuación en el bg del footer -->
+  <footer class:list={['px-5 py-3 border-t border-white/10 flex justify-center items-center gap-3 font-sans', actuacionDisplay.footerBg]}>
+    <div class="flex items-center justify-center gap-2 text-center min-h-[1.25rem]">
+      <span class="text-lg leading-none flex items-center mb-1.5" aria-hidden="true">{actuacionDisplay.emoji}</span>
+      <span class="text-white text-sm font-bold uppercase tracking-widest leading-none flex items-center">
+        {footerLabel}
+      </span>
+    </div>
+    <span class="text-slate-400 text-xs font-normal tracking-tighter">
+      {player.status.subText && player.status.subText !== player.matchday ? player.status.subText : (!player.matchday ? '—' : '')}
+    </span>
+  </footer>
+</article>
+  </a>
+) : (
+  <article class="group relative flex flex-col bg-card-dark border border-white/10 rounded-xl overflow-hidden hover:border-gold/30 hover:shadow-xl transition-all">
+  <!-- Puntuación: absolute, esquina superior izquierda -->
+  {hasPuntuacion && (
+    <div class="absolute top-0 left-0 z-10 pointer-events-none p-3">
+      <div class="flex flex-col items-center gap-0.5">
+        <span class="text-[9px] text-slate-400 uppercase font-bold font-sans tracking-wider">Puntuación</span>
+        <span class:list={['inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-bold font-sans', getPuntuacionCapsuleClass(player.puntuacion!)]}>
+          {player.puntuacion}
+        </span>
+      </div>
+    </div>
+  )}
+
+  <!-- Jornada + Fecha: absolute, pegado a top-right para no empujar contenido -->
+  {(player.matchday || player.fecha) ? (
+    <div class="absolute top-0 right-0 z-10 pointer-events-none">
+      <CompactLabelDate
+        label={player.matchday || 'Partido'}
+        date={player.fecha}
+        static
+      />
+    </div>
+  ) : null}
+
+  <!-- Foto y datos del jugador -->
+  <div class="p-6 pb-4 flex flex-col items-center text-center pt-6">
+    <div class="relative mb-4">
+      <div class:list={['w-24 h-24 border-2 transition-colors overflow-hidden rounded-full', isInactive ? 'border-primary/40 opacity-80' : 'border-white/20 group-hover:border-gold']}>
+        <img
+          src={player.image}
+          alt={player.name}
+          class:list={['w-full h-full object-cover', isInactive && 'grayscale']}
+          width="96"
+          height="96"
+          loading="lazy"
+        />
+      </div>
+      <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full overflow-hidden shadow border border-white/20">
+        <img
+          src={player.teamLogo}
+          alt={player.team}
+          class="w-full h-full object-contain"
+          width="32"
+          height="32"
+          loading="lazy"
+        />
+      </div>
+    </div>
+    <h3 class="text-xl font-black text-white group-hover:text-gold transition-colors font-display">
+      {player.name}
+    </h3>
+    <p class="text-xs font-bold text-gold uppercase tracking-widest mt-1 font-sans">
+      {player.rival ? (
+        <>
+          <span class="text-[10px] font-bold text-white/70 normal-case tracking-wide block">VS</span>
+          <span class="text-gold">{player.rival}</span>
+        </>
+      ) : (
+        <span>{player.team} • {player.league}</span>
+      )}
+    </p>
+  </div>
+
+  <!-- Stats: minutos, goles, asistencias (una línea) -->
+  <div class="border-t border-white/10 bg-white/5 p-5 flex flex-wrap justify-center items-center gap-6">
+    <div class="flex gap-2">
+      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">schedule</span>
+      <div>
+        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
+        <p class="font-bold text-white font-sans">{player.stats.minutes}</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">sports_soccer</span>
+      <div>
+        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles</p>
+        <p class:list={['font-bold font-sans', player.stats.goals === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.goals}</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">assist_walker</span>
+      <div>
+        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Asistencias</p>
+        <p class:list={['font-bold font-sans', player.stats.assists === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.assists}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado y actuación: texto siempre blanco, color según actuación en el bg del footer -->
+  <footer class:list={['px-5 py-3 border-t border-white/10 flex justify-center items-center gap-3 font-sans', actuacionDisplay.footerBg]}>
+    <div class="flex items-center justify-center gap-2 text-center min-h-[1.25rem]">
+      <span class="text-lg leading-none flex items-center mb-1.5" aria-hidden="true">{actuacionDisplay.emoji}</span>
+      <span class="text-white text-sm font-bold uppercase tracking-widest leading-none flex items-center">
+        {footerLabel}
+      </span>
+    </div>
+    <span class="text-slate-400 text-xs font-normal tracking-tighter">
+      {player.status.subText && player.status.subText !== player.matchday ? player.status.subText : (!player.matchday ? '—' : '')}
+    </span>
+  </footer>
+</article>
+)}

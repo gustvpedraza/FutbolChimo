@@ -1,0 +1,111 @@
+---
+/** Carrusel de noticias con Splide */
+import NewsCard from './NewsCard.astro';
+import type { WpPostEmbedded } from '../types/wordpress';
+
+interface Props {
+  posts: WpPostEmbedded[];
+  /** Id único del carrusel */
+  carouselId?: string;
+  /** Variante de NewsCard: compact | default | featured | horizontal | large */
+  cardVariant?: 'compact' | 'default' | 'featured' | 'horizontal' | 'large';
+}
+
+const { posts, carouselId, cardVariant = 'compact' } = Astro.props;
+const id = carouselId ?? `carousel-${Math.random().toString(36).slice(2, 9)}`;
+const isHorizontal = cardVariant === 'horizontal';
+const splideClass = isHorizontal ? 'news-carousel-horizontal' : 'news-carousel-splide';
+---
+
+<section
+  id={id}
+  class:list={['splide splide-vinotinto h-full min-h-0 flex flex-col', splideClass]}
+  aria-label="Carrusel de noticias"
+>
+  <div class="splide__track">
+    <ul class="splide__list">
+      {posts.map((post) => (
+        <li class="splide__slide">
+          <div class="splide__slide__wrapper">
+            <NewsCard post={post} variant={cardVariant} showCategory={true} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  function initNewsCarousels() {
+    if (typeof window.Splide === 'undefined') {
+      setTimeout(initNewsCarousels, 50);
+      return;
+    }
+    document.querySelectorAll('.news-carousel-splide').forEach((el) => {
+      if (el.classList.contains('is-initialized')) return;
+      new window.Splide(el, {
+        type: 'slide',
+        perPage: 3,
+        perMove: 1,
+        gap: '1.25rem',
+        padding: { right: '0.5rem', left: '0.5rem' },
+        arrows: true,
+        pagination: true,
+        drag: true,
+        snap: true,
+        breakpoints: {
+          640: { perPage: 1, gap: '1rem' },
+          768: { perPage: 2, gap: '1rem' },
+          1024: { perPage: 3, gap: '1.25rem' },
+        },
+        i18n: {
+          prev: 'Anterior',
+          next: 'Siguiente',
+          first: 'Ir al primero',
+          last: 'Ir al último',
+          slideX: 'Slide %s',
+          pageX: 'Página %s',
+          play: 'Reproducir',
+          pause: 'Pausar',
+        },
+      }).mount();
+    });
+  }
+
+  function initHorizontalCarousels() {
+    if (typeof window.Splide === 'undefined') {
+      setTimeout(initHorizontalCarousels, 50);
+      return;
+    }
+    document.querySelectorAll('.news-carousel-horizontal').forEach((el) => {
+      if (el.classList.contains('is-initialized')) return;
+      new window.Splide(el, {
+        type: 'slide',
+        perPage: 2,
+        perMove: 1,
+        gap: '0.75rem',
+        padding: { right: '0.25rem', left: '0.25rem' },
+        arrows: false,
+        pagination: true,
+        drag: true,
+        snap: true,
+        breakpoints: {
+          640: { perPage: 1, gap: '0.75rem' },
+          1280: { perPage: 2, gap: '0.75rem' },
+        },
+        i18n: {
+          slideX: 'Slide %s',
+          pageX: 'Página %s',
+        },
+      }).mount();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { initNewsCarousels(); initHorizontalCarousels(); });
+  } else {
+    initNewsCarousels();
+    initHorizontalCarousels();
+  }
+  document.addEventListener('astro:page-load', () => { initNewsCarousels(); initHorizontalCarousels(); });
+</script>

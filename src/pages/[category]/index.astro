@@ -1,0 +1,44 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NewsGrid from '../../components/NewsGrid.astro';
+import Pagination from '../../components/Pagination.astro';
+import { wpApi } from '../../lib/wordpress';
+import { CATEGORY_SLUGS, CATEGORY_LABELS } from '../../lib/constants';
+import type { CategorySlug } from '../../lib/constants';
+
+export async function getStaticPaths() {
+  return CATEGORY_SLUGS.map((category) => ({ params: { category } }));
+}
+
+interface Props {
+  category: string;
+}
+
+const { category } = Astro.params as { category: CategorySlug };
+const title = CATEGORY_LABELS[category] ?? category;
+let posts: import('../../types/wordpress').WpPostEmbedded[] = [];
+let totalPages = 1;
+
+try {
+  const result = await wpApi.getPostsByCategorySlug(category, { per_page: 10, page: 1 });
+  posts = result.posts;
+  totalPages = result.totalPages;
+} catch {
+  posts = [];
+}
+
+const baseUrl = `/${category}`;
+---
+
+<Layout title={`${title} | Fútbol Chimó`} description={`Noticias de ${title}`}>
+  <article class="space-y-12">
+    <header>
+      <h1 class="text-3xl font-bold tracking-tight text-white">{title}</h1>
+      <p class="mt-2 text-white/60">Últimas noticias en esta categoría.</p>
+    </header>
+
+    <NewsGrid posts={posts} title="" />
+
+    <Pagination baseUrl={baseUrl} currentPage={1} totalPages={totalPages} />
+  </article>
+</Layout>

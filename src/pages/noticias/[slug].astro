@@ -1,0 +1,134 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ArticleSidebar from '../../components/ArticleSidebar.astro';
+import { wpApi } from '../../lib/wordpress';
+import { MOCK_POSTS } from '../../lib/mockPosts';
+import { getFeaturedImageUrl, formatDate, getFirstCategoryName } from '../../lib/utils';
+import type { WpPostEmbedded } from '../../types/wordpress';
+
+export async function getStaticPaths() {
+  const slugs: { params: { slug: string } }[] = [];
+  try {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
+      const posts = await wpApi.getPosts({ per_page: 100, page, _embed: false });
+      for (const p of posts) {
+        slugs.push({ params: { slug: p.slug } });
+      }
+      hasMore = posts.length === 100;
+      page++;
+    }
+  } catch {
+    // Sin WP: usar slugs de mock para que las rutas existan y puedas ver/ajustar estilos
+  }
+  if (slugs.length === 0) {
+    for (const p of MOCK_POSTS) {
+      slugs.push({ params: { slug: p.slug } });
+    }
+  }
+  return slugs;
+}
+
+const { slug } = Astro.params as { slug: string };
+let post: WpPostEmbedded | null = null;
+let relatedPosts: WpPostEmbedded[] = [];
+let mostReadPosts: WpPostEmbedded[] = [];
+
+try {
+  post = await wpApi.getPost(slug);
+} catch {
+  post = null;
+}
+
+if (!post) {
+  const mockPost = MOCK_POSTS.find((p) => p.slug === slug);
+  if (mockPost) {
+    post = mockPost;
+    relatedPosts = MOCK_POSTS.filter((p) => p.slug !== slug).slice(0, 6);
+    mostReadPosts = MOCK_POSTS.filter((p) => p.slug !== slug).slice(0, 6);
+  } else {
+    return Astro.redirect('/');
+  }
+} else {
+  try {
+    const [latest, mostViewed] = await Promise.all([
+      wpApi.getPosts({ per_page: 10, _embed: true }),
+      wpApi.getMostViewedPosts(6).catch(() => [] as Array<{ id: number; slug: string; title: { rendered: string } }>),
+    ]);
+    const others = (latest as WpPostEmbedded[]).filter((p) => p.slug !== slug);
+    relatedPosts = others.slice(0, 6);
+    mostReadPosts = mostViewed.length > 0 ? (mostViewed as unknown as WpPostEmbedded[]) : others.slice(0, 6);
+  } catch {
+    relatedPosts = [];
+    mostReadPosts = [];
+  }
+}
+
+const imageUrl = getFeaturedImageUrl(post as WpPostEmbedded);
+const categoryName = getFirstCategoryName(post as WpPostEmbedded);
+/** Enlace a X (Twitter) desde ACF: campo "x_post_url" expuesto en REST API */
+const acf = (post as WpPostEmbedded).acf ?? {};
+const enlaceX = typeof acf.x_post_url === 'string' ? acf.x_post_url : null;
+---
+
+<Layout
+  title={`${post.title.rendered} | Fútbol Chimó`}
+  description={post.excerpt?.rendered?.replace(/<[^>]*>/g, '').slice(0, 160) ?? ''}
+  hasSidebar={true}
+>
+  <main class="flex flex-col gap-8 lg:col-span-8">
+    <!-- Cabecera del artículo -->
+    <header class="space-y-4">
+      {categoryName && (
+        <div class="flex items-center gap-3 text-sm font-sans">
+          <span class="text-gold font-bold uppercase tracking-wider">{categoryName}</span>
+        </div>
+      )}
+      <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl font-display leading-tight">
+        {post.title.rendered}
+      </h1>
+      <div class="flex items-center justify-between border-y border-white/10 py-4">
+        <time class="text-sm text-white/70 font-sans" datetime={post.date}>
+          {formatDate(post.date)}
+        </time>
+        {enlaceX && (
+          <a
+            href={enlaceX}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 hover:text-gold hover:bg-white/5 transition-colors border border-white/10 hover:border-gold/30 font-sans text-sm font-medium"
+            aria-label="Ver en X (Twitter)"
+          >
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            Ver en X
+          </a>
+        )}
+      </div>
+      {imageUrl && (
+        <div class="relative w-full aspect-video overflow-hidden rounded-xl border border-white/10">
+          <img src={imageUrl} alt="" class="h-full w-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" aria-hidden="true"></div>
+        </div>
+      )}
+    </header>
+
+    <!-- Contenido del artículo -->
+    <div class="bg-card-dark border border-white/10 rounded-xl p-6 md:p-8">
+      <div
+        class="article-content max-w-[75ch] mx-auto text-base md:text-lg text-white/90 font-sans leading-relaxed space-y-4 [&_a]:text-gold [&_a:hover]:underline [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-white [&_h2]:font-display [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6"
+        set:html={post.content.rendered}
+      />
+    </div>
+  </main>
+
+  <aside class="lg:col-span-4" slot="sidebar">
+    <ArticleSidebar
+      relatedPosts={relatedPosts}
+      mostReadPosts={mostReadPosts}
+      currentSlug={slug}
+    />
+  </aside>
+</Layout>

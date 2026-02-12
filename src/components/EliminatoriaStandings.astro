@@ -1,0 +1,90 @@
+---
+/** Card con tabla de posiciones de eliminatoria (estilo Liga FUTVE), datos editables en src/data/eliminatoria.ts */
+import type { EliminatoriaRow } from '../data/eliminatoria';
+
+interface Props {
+  title?: string;
+  rows: EliminatoriaRow[];
+  /** Id único para el botón "Ver tabla completa" (ej. mayor, femenino) */
+  id?: string;
+}
+
+const { title = 'Eliminatorias', rows, id: sectionId = 'elim' } = Astro.props;
+const visibleRows = rows.slice(0, 6);
+const moreRows = rows.slice(6);
+const hasMore = moreRows.length > 0;
+const moreId = `eliminatoria-more-${sectionId}`;
+---
+
+<div class="bg-card-dark rounded-xl p-6 border border-white/10 h-full flex flex-col" data-eliminatoria-standings>
+  <h3 class="text-xl font-black text-white mb-6 font-display">{title}</h3>
+  <div class="overflow-hidden flex-1 min-h-0">
+    <table class="w-full text-sm text-left">
+      <thead class="text-[10px] text-slate-400 uppercase tracking-widest border-b border-white/10">
+        <tr>
+          <th class="px-2 py-3 font-semibold text-white">#</th>
+          <th class="px-2 py-3 font-semibold text-white">Equipo</th>
+          <th class="px-2 py-3 font-semibold text-right text-white">Pts</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/10 font-sans">
+        {visibleRows.map((row) => (
+          <tr class="hover:bg-white/5 transition-colors">
+            <td class:list={[row.rank === 1 ? 'text-gold' : 'text-slate-400', 'px-2 py-4 font-bold']}>
+              {row.rank}
+            </td>
+            <td class="px-2 py-4 text-white font-medium">
+              <div class="flex items-center gap-3">
+                <span class:list={['w-2 h-2 rounded-full shrink-0', row.statusColor ?? 'bg-transparent']} />
+                {row.team}
+              </div>
+            </td>
+            <td class="px-2 py-4 text-white text-right font-bold">{row.points}</td>
+          </tr>
+        ))}
+      </tbody>
+      {hasMore && (
+        <tbody id={moreId} class="divide-y divide-white/10 font-sans hidden" aria-hidden="true">
+          {moreRows.map((row) => (
+            <tr class="hover:bg-white/5 transition-colors">
+              <td class:list={[row.rank === 1 ? 'text-gold' : 'text-slate-400', 'px-2 py-4 font-bold']}>
+                {row.rank}
+              </td>
+              <td class="px-2 py-4 text-white font-medium">
+                <div class="flex items-center gap-3">
+                  <span class:list={['w-2 h-2 rounded-full shrink-0', row.statusColor ?? 'bg-transparent']} />
+                  {row.team}
+                </div>
+              </td>
+              <td class="px-2 py-4 text-white text-right font-bold">{row.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      )}
+    </table>
+  </div>
+  {hasMore && (
+    <button
+      type="button"
+      class="eliminatoria-toggle w-full mt-6 py-2.5 text-xs font-bold text-slate-900 bg-gold hover:bg-gold/90 rounded-xl transition-all font-sans border border-gold/30 text-center cursor-pointer"
+      aria-expanded="false"
+      aria-controls={moreId}
+    >
+      Ver tabla completa
+    </button>
+  )}
+</div>
+
+<script>
+  document.querySelectorAll('.eliminatoria-toggle').forEach((btn) => {
+    const id = btn.getAttribute('aria-controls');
+    const more = id ? document.getElementById(id) : null;
+    if (!more) return;
+    btn.addEventListener('click', () => {
+      const expanded = more.classList.toggle('hidden');
+      more.setAttribute('aria-hidden', String(expanded));
+      btn.setAttribute('aria-expanded', String(!expanded));
+      btn.textContent = expanded ? 'Ver tabla completa' : 'Ver menos';
+    });
+  });
+</script>

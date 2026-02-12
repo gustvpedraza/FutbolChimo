@@ -1,0 +1,39 @@
+---
+import type { WpProspecto } from '../types/wordpress';
+
+interface Props {
+  prospecto: WpProspecto;
+}
+
+const { prospecto } = Astro.props;
+const imgUrl = prospecto._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? prospecto.acf?.foto_url ?? null;
+const nombre = prospecto.acf?.nombre_completo ?? prospecto.title.rendered;
+const club = prospecto.acf?.club ?? '';
+const posicion = prospecto.acf?.posicion ?? '';
+---
+
+<article class="group overflow-hidden rounded-xl border border-white/10 bg-card-dark transition-all hover:border-gold/30 hover:shadow-xl">
+  <a href={`/cosecha/${prospecto.slug}`} class="block">
+    <div class="aspect-[3/4] w-full overflow-hidden bg-black/40">
+      {imgUrl ? (
+        <img
+          src={imgUrl}
+          alt={nombre}
+          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
+      ) : (
+        <div class="flex h-full items-center justify-center text-slate-500 text-4xl font-light">
+          #
+        </div>
+      )}
+    </div>
+    <div class="p-4 border-t border-white/5">
+      <h3 class="font-black text-white group-hover:text-gold transition-colors font-display">
+        {nombre}
+      </h3>
+      {club && <p class="mt-1 text-sm text-slate-400 font-sans">{club}</p>}
+      {posicion && <p class="mt-0.5 text-xs font-bold uppercase tracking-widest text-gold font-sans">{posicion}</p>}
+    </div>
+  </a>
+</article>

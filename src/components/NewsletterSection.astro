@@ -1,0 +1,43 @@
+---
+/** Bloque de suscripción al newsletter para el final de páginas (ej. selecciones). Opcional: slot "donacion" para columna derecha. */
+interface Props {
+  /** Si true, el layout es de dos columnas (newsletter | slot donacion) */
+  twoColumns?: boolean;
+}
+const { twoColumns = false } = Astro.props;
+---
+
+<section class="mt-16 mb-8" aria-labelledby="newsletter-heading">
+  <div class={twoColumns ? 'grid grid-cols-1 lg:grid-cols-2 gap-8' : ''}>
+    <div class={twoColumns ? 'min-w-0' : ''}>
+  <div class="bg-card-dark rounded-xl p-8 md:p-12 text-center relative overflow-hidden group border border-white/10 w-full h-full">
+    <div class="absolute top-0 right-0 p-4 opacity-10 rotate-12 transition-transform group-hover:scale-110" aria-hidden="true">
+      <span class="material-symbols-outlined text-8xl text-white">sports_soccer</span>
+    </div>
+    <div class="relative z-10">
+      <span class="material-symbols-outlined text-5xl text-gold mb-4 block" aria-hidden="true">alternate_email</span>
+      <h2 id="newsletter-heading" class="text-2xl md:text-3xl font-black text-white mb-3 font-display">No te pierdas un gol</h2>
+      <p class="text-slate-400 text-sm md:text-base font-sans mb-6 max-w-md mx-auto">
+        Recibe las últimas de la Vinotinto y resúmenes de partidos en tu correo.
+      </p>
+      <form class="space-y-3 max-w-sm mx-auto" action="#" method="post">
+        <input
+          type="email"
+          placeholder="Tu correo"
+          class="w-full rounded-xl border-none bg-white px-4 py-3 text-sm text-slate-900 focus:ring-4 focus:ring-gold/30 font-sans shadow-inner"
+          aria-label="Correo para suscripción"
+        />
+        <button type="submit" class="w-full bg-primary text-white font-bold text-sm py-3 rounded-xl hover:bg-primary-dark transition-all border border-gold/20 shadow-lg font-sans">
+          Suscribirse
+        </button>
+      </form>
+    </div>
+  </div>
+    </div>
+    {twoColumns && (
+      <div class="min-w-0">
+        <slot name="donacion" />
+      </div>
+    )}
+  </div>
+</section>

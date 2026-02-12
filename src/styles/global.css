@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* Estilos tipo vinotinto-legionarios — fondo se mantiene (#47162a). Elementos circulares se mantienen. */
+@theme {
+  /* Fondo general (se mantiene como está) */
+  --color-background-dark: #47162a;
+  /* Primario / vinotinto (estilo legionarios) */
+  --color-primary: #c20a38;
+  --color-primary-dark: #a0092e;
+  /* Dorado / acento (estilo legionarios) */
+  --color-gold: #d4af37;
+  --color-accent-gold: #d4af37;
+  /* Cards oscuras (estilo legionarios) */
+  --color-card-dark: #1a0d10;
+  /* Surface claro (para algunos bloques) */
+  --color-surface-dark: #1a0d10;
+  /* Verde estado */
+  --color-chimo-green: #22c55e;
+  /* Blanco (para color-mix) */
+  --color-white: #fff;
+  /* Surface suave: 5% blanco en transparente (reemplazo de gray-800) */
+  --color-surface-muted: color-mix(in oklab, var(--color-white) 5%, transparent);
+  /* Tipografía: Lexend como en vinotinto-legionarios */
+  --font-family-display: "Lexend", sans-serif;
+  --font-family-sans: "Lexend", sans-serif;
+  /* Border radius (estilo legionarios: redondeado) */
+  --radius: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer base {
+  /* Solo elementos circulares se fuerzan a 50% (el resto usa radius del tema) */
+  .ficha-jugador {
+    border-radius: 50% !important;
+  }
+  .shape-redondo {
+    border-radius: 50% !important;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #47162a;
+    background-image: url("/escudo.png");
+    background-position: bottom center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    color: white;
+    font-family: "Lexend", sans-serif;
+  }
+}
+
+.font-display {
+  font-family: "Lexend", sans-serif;
+}
+
+.bg-background-dark { background-color: #47162a; }
+.bg-card-dark { background-color: #1a0d10; }
+.bg-surface-dark { background-color: #1a0d10; }
+.bg-surface-muted { background-color: color-mix(in oklab, var(--color-white) 5%, transparent); }
+.text-surface { color: #e2e8f0; }
+.border-surface { border-color: rgba(255,255,255,0.1); }
+.selection\:bg-primary ::selection { background-color: var(--color-primary); color: #fff; }
+
+/* Splide: tema vinotinto (flechas y paginación) */
+.splide-vinotinto .splide__arrow {
+  background: var(--color-gold);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: #1a0d10;
+  border-radius: 0.75rem;
+}
+.splide-vinotinto .splide__arrow--prev {
+  left: -3rem;
+}
+.splide-vinotinto .splide__arrow--next {
+  right: -3rem;
+}
+.splide-vinotinto .splide__arrow:hover {
+  background: color-mix(in oklab, var(--color-gold) 85%, white);
+  border-color: var(--color-gold);
+  color: #1a0d10;
+}
+.splide-vinotinto .splide__pagination.splide__pagination--ltr {
+  bottom: -2rem;
+}
+.splide-vinotinto .splide__pagination__page {
+  background: rgba(255, 255, 255, 0.2);
+}
+.splide-vinotinto .splide__pagination__page.is-active {
+  background: #d4af37;
+  transform: scale(1.1);
+}
+.splide-vinotinto .splide__slide__wrapper {
+  height: 100%;
+}
+
+/* Slider de resultados (sidebar) */
+.resultados-splide .splide__pagination.splide__pagination--ltr {
+  position: relative;
+  bottom: 8px;
+  padding: 0.5rem 0 0;
+}
+.resultados-splide .splide__pagination__page {
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 3px;
+}
+.resultados-splide .splide__pagination__page.is-active {
+  background: #d4af37;
+  transform: scale(1.2);
+}

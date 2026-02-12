@@ -1,0 +1,115 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { wpApi } from '../../lib/wordpress';
+
+export async function getStaticPaths() {
+  const slugs: { params: { slug: string } }[] = [];
+  try {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
+      const list = await wpApi.getProspectos({ per_page: 100, page });
+      for (const p of list) {
+        slugs.push({ params: { slug: p.slug } });
+      }
+      hasMore = list.length === 100;
+      page++;
+    }
+  } catch {
+    //
+  }
+  return slugs;
+}
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.params as { slug: string };
+let prospecto: Awaited<ReturnType<typeof wpApi.getProspecto>> = null;
+try {
+  prospecto = await wpApi.getProspecto(slug);
+} catch {
+  prospecto = null;
+}
+
+if (!prospecto) {
+  return Astro.redirect('/cosecha');
+}
+
+const imgUrl = prospecto._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? prospecto.acf?.foto_url ?? null;
+const acf = prospecto.acf ?? {};
+const nombre = acf.nombre_completo ?? prospecto.title.rendered;
+---
+
+<Layout title={`${nombre} | Cosecha | Fútbol Chimó`} description={`Ficha de ${nombre} - Cosecha Fútbol Chimó`}>
+  <article class="space-y-10">
+    <header class="flex flex-col gap-8 sm:flex-row sm:items-start">
+      <div class="shrink-0">
+        {imgUrl ? (
+          <img
+            src={imgUrl}
+            alt={nombre}
+            class="aspect-[3/4] w-64 rounded-lg object-cover shadow-md"
+          />
+        ) : (
+          <div class="flex aspect-[3/4] w-64 items-center justify-center rounded-xl bg-white/10 text-white/20 text-6xl font-light">
+            #
+          </div>
+        )}
+      </div>
+      <div class="min-w-0 flex-1 space-y-4">
+        <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          {nombre}
+        </h1>
+        <dl class="grid gap-2 text-sm sm:grid-cols-2">
+          {acf.club && (
+            <>
+              <dt class="text-white/50">Club</dt>
+              <dd class="font-medium text-white/90">{acf.club}</dd>
+            </>
+          )}
+          {(acf.edad != null || acf.fecha_nacimiento) && (
+            <>
+              <dt class="text-white/50">Edad</dt>
+              <dd class="font-medium text-white/90">
+                {acf.edad != null ? `${acf.edad} años` : acf.fecha_nacimiento ?? '—'}
+              </dd>
+            </>
+          )}
+          {acf.posicion && (
+            <>
+              <dt class="text-white/50">Posición</dt>
+              <dd class="font-medium text-chimo-green">{acf.posicion}</dd>
+            </>
+          )}
+        </dl>
+      </div>
+    </header>
+
+    {acf.estadisticas && (
+      <section>
+        <h2 class="mb-4 text-xl font-semibold text-white">Estadísticas</h2>
+        <div class="rounded-xl border border-white/10 bg-white/5 p-6 text-white/90 whitespace-pre-wrap" set:html={acf.estadisticas} />
+      </section>
+    )}
+
+    {acf.scouting_report && (
+      <section>
+        <h2 class="mb-4 text-xl font-semibold text-white">Scouting Report</h2>
+        <div class="article-content max-w-none space-y-2 text-white/90 [&_p]:leading-relaxed" set:html={acf.scouting_report} />
+      </section>
+    )}
+
+    {prospecto.content?.rendered?.trim() && (
+      <section>
+        <h2 class="mb-4 text-xl font-semibold text-white">Perfil</h2>
+        <div class="article-content max-w-none space-y-2 text-white/90 [&_p]:leading-relaxed" set:html={prospecto.content.rendered} />
+      </section>
+    )}
+
+    <p class="pt-4">
+      <a href="/cosecha" class="text-chimo-gold hover:underline">← Volver a Cosecha</a>
+    </p>
+  </article>
+</Layout>
