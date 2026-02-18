@@ -1,9 +1,9 @@
 /** Categorías principales para la ruta dinámica [category] */
-export const CATEGORY_SLUGS = ['los-nuestros', 'selecciones', 'futve'] as const;
+export const CATEGORY_SLUGS = ['vinotintos-por-el-mundo', 'selecciones', 'futve'] as const;
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 
 export const CATEGORY_LABELS: Record<CategorySlug, string> = {
-  'los-nuestros': 'Los Nuestros',
+  'vinotintos-por-el-mundo': 'Vinotintos por el Mundo',
   selecciones: 'Selecciones',
   futve: 'Futve',
 };

@@ -10,7 +10,7 @@ interface Props {
   partidos?: PartidoLigaFutve[] | null;
   /** Posiciones desde la página resultados-liga-futve (ACF datos_posiciones_json). */
   posiciones?: PosicionLigaFutve[] | null;
-  /** Jugadores del CPT Los Nuestros */
+  /** Jugadores del CPT Vinotintos por el Mundo */
   jugadores?: WpJugador[] | null;
 }
 
@@ -403,7 +403,7 @@ const hasMore = standingsMore.length > 0;
             const foto = getJugadorFoto(j);
             const liga = getJugadorLiga(j);
             const actuacion = (j.acf?.actuacion ?? '').toString().trim();
-            const url = j.acf?.url_de_referencia || '/los-nuestros';
+            const url = j.acf?.url_de_referencia || '/vinotintos-por-el-mundo';
             const isMvp = actuacion.toLowerCase() === 'mvp';
             const puntuacion = getPuntuacion(j);
             const rival = (j.acf?.rival ?? j.acf?.opponent ?? '').toString().trim();
@@ -444,7 +444,7 @@ const hasMore = standingsMore.length > 0;
             );
           })}
         </div>
-        <a href="/los-nuestros" class="block mt-4 text-center text-gold text-xs font-bold hover:text-white transition-colors font-sans uppercase tracking-widest">
+        <a href="/vinotintos-por-el-mundo" class="block mt-4 text-center text-gold text-xs font-bold hover:text-white transition-colors font-sans uppercase tracking-widest">
           Ver todos los jugadores →
         </a>
       </div>

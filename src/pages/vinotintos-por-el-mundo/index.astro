@@ -1,0 +1,215 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import LegionarioCard from '../../components/LegionarioCard.astro';
+import { wpApi } from '../../lib/wordpress';
+import { wpJugadorToLegionario } from '../../lib/jugadores';
+import type { Legionario } from '../../types/legionarios';
+
+let jugadores: Legionario[] = [];
+try {
+  const wpJugadores = await wpApi.getJugadores({ per_page: 50 });
+  const list = wpJugadores.map(wpJugadorToLegionario);
+  const toNum = (p: Legionario): number => {
+    const v = p.puntuacion;
+    if (v === undefined || v === null || v === '') return -1;
+    const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+    return Number.isNaN(n) ? -1 : n;
+  };
+  jugadores = [...list].sort((a, b) => toNum(b) - toNum(a));
+} catch {
+  jugadores = [];
+}
+
+function puntuacionNum(p: Legionario): number {
+  const v = p.puntuacion;
+  if (v === undefined || v === null || v === '') return -1;
+  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+  return Number.isNaN(n) ? -1 : n;
+}
+
+const posicionesUnicas = [...new Set(jugadores.map((j) => (j.posicion ?? '').trim()).filter(Boolean))].sort();
+const actuacionesUnicas = [...new Set(jugadores.map((j) => (j.actuacion ?? '').trim()).filter(Boolean))].sort();
+---
+
+<Layout
+  title="Vinotintos por el Mundo | Fútbol Chimó"
+  description="Seguimiento de nuestros jugadores Vinotinto en las mejores ligas del mundo: minutos, goles, asistencias y más."
+>
+  <section class="space-y-8">
+    <header class="mb-10">
+      <h1 class="text-3xl sm:text-4xl font-black text-white flex items-center gap-3 font-display">
+        <span class="w-2 h-10 bg-gold rounded-full shrink-0" aria-hidden="true"></span>
+        Vinotintos por el Mundo
+      </h1>
+      <p class="mt-3 text-white/50 text-lg font-sans max-w-2xl">
+        Seguimiento de nuestros jugadores Vinotinto en las mejores ligas del mundo. Minutos jugados, goles, asistencias, tarjetas y estado físico.
+      </p>
+    </header>
+
+    <!-- Barra de filtros -->
+    <div class="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-card-dark border border-white/10" role="search" aria-label="Filtrar jugadores">
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 text-xs font-bold text-white/70 uppercase tracking-widest font-sans">
+          <span class="material-symbols-outlined text-lg text-gold">star</span>
+          Puntuación
+        </label>
+        <select id="filter-puntuacion" class="jugadores-filter bg-card-dark border border-white/20 text-white text-sm font-sans py-2 px-3 rounded-xl focus:ring-2 focus:ring-gold focus:outline-none min-w-[8rem]">
+          <option value="">Todos</option>
+          <option value="9">9 o más</option>
+          <option value="8">8 o más</option>
+          <option value="7">7 o más</option>
+          <option value="6">6 o más</option>
+          <option value="5">5 o más</option>
+          <option value="sin">Sin puntuación</option>
+        </select>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 text-xs font-bold text-white/70 uppercase tracking-widest font-sans">
+          <span class="material-symbols-outlined text-lg text-gold">sports_soccer</span>
+          Goles
+        </label>
+        <select id="filter-goles" class="jugadores-filter bg-card-dark border border-white/20 text-white text-sm font-sans py-2 px-3 rounded-xl focus:ring-2 focus:ring-gold focus:outline-none min-w-[7rem]">
+          <option value="">Todos</option>
+          <option value="0">0</option>
+          <option value="1">1 o más</option>
+          <option value="2">2 o más</option>
+        </select>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 text-xs font-bold text-white/70 uppercase tracking-widest font-sans">
+          <span class="material-symbols-outlined text-lg text-gold">emoji_events</span>
+          Actuación
+        </label>
+        <select id="filter-actuacion" class="jugadores-filter bg-card-dark border border-white/20 text-white text-sm font-sans py-2 px-3 rounded-xl focus:ring-2 focus:ring-gold focus:outline-none min-w-[10rem]">
+          <option value="">Todas</option>
+          {actuacionesUnicas.map((a) => (
+            <option value={a}>{a}</option>
+          ))}
+        </select>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 text-xs font-bold text-white/70 uppercase tracking-widest font-sans">
+          <span class="material-symbols-outlined text-lg text-gold">sports_handball</span>
+          Posición
+        </label>
+        <select id="filter-posicion" class="jugadores-filter bg-card-dark border border-white/20 text-white text-sm font-sans py-2 px-3 rounded-xl focus:ring-2 focus:ring-gold focus:outline-none min-w-[8rem]">
+          <option value="">Todas</option>
+          {posicionesUnicas.map((pos) => (
+            <option value={pos}>{pos}</option>
+          ))}
+        </select>
+      </div>
+      <button
+        type="button"
+        id="btn-limpiar-filtros"
+        class="ml-auto shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-slate-900 font-bold text-sm font-sans uppercase tracking-wider hover:bg-gold/90 focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-[var(--bg-page)] focus:outline-none transition-colors"
+      >
+        <span class="material-symbols-outlined text-lg">filter_alt_off</span>
+        Limpiar filtros
+      </button>
+    </div>
+
+    <p class="text-sm text-white/50 font-sans mt-2">
+      Actuaciones de la semana — <span class="text-white font-bold">15 feb</span> al <span class="text-white font-bold">22 feb</span>
+    </p>
+
+    <!-- Grid de cards (jugadores desde WordPress CPT Vinotintos por el Mundo) -->
+    {jugadores.length > 0 ? (
+      <>
+        <div id="jugadores-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {jugadores.map((player) => {
+            const punt = puntuacionNum(player);
+            const puntStr = punt >= 0 ? String(punt) : '';
+            return (
+              <div
+                class="jugador-card-wrapper"
+                data-player-id={player.id}
+                data-posicion={(player.posicion ?? '').trim()}
+                data-actuacion={(player.actuacion ?? '').trim()}
+                data-puntuacion={puntStr}
+                data-goals={player.stats.goals}
+                data-assists={player.stats.assists}
+              >
+                <LegionarioCard player={player} />
+              </div>
+            );
+          })}
+        </div>
+        <p id="jugadores-count" class="text-sm text-white/50 font-sans mt-8">
+          Mostrando <span class="text-white font-bold">{jugadores.length}</span> jugadores.
+        </p>
+      </>
+    ) : (
+      <div class="rounded-xl border border-white/10 bg-card-dark p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-slate-500 mb-4 block" aria-hidden="true">groups</span>
+        <p class="text-slate-400 font-sans">Aún no hay jugadores. Añade jugadores en WordPress (Vinotintos por el Mundo) para verlos aquí.</p>
+      </div>
+    )}
+  </section>
+
+  <script>
+    (function () {
+      const grid = document.getElementById('jugadores-grid');
+      const countEl = document.getElementById('jugadores-count');
+      const filterPuntuacion = document.getElementById('filter-puntuacion') as HTMLSelectElement | null;
+      const filterGoles = document.getElementById('filter-goles') as HTMLSelectElement | null;
+      const filterActuacion = document.getElementById('filter-actuacion') as HTMLSelectElement | null;
+      const filterPosicion = document.getElementById('filter-posicion') as HTMLSelectElement | null;
+      const btnLimpiar = document.getElementById('btn-limpiar-filtros');
+
+      const wrappers = grid?.querySelectorAll('.jugador-card-wrapper') ?? [];
+      const countSpan = countEl?.querySelector('span');
+
+      function applyFilters() {
+        if (!grid || !countEl) return;
+        const puntVal = filterPuntuacion?.value ?? '';
+        const golesVal = filterGoles?.value ?? '';
+        const actuacionVal = (filterActuacion?.value ?? '').trim();
+        const posicionVal = (filterPosicion?.value ?? '').trim();
+
+        let visible = 0;
+        wrappers.forEach((w) => {
+          const posicion = (w.getAttribute('data-posicion') ?? '').trim();
+          const actuacion = (w.getAttribute('data-actuacion') ?? '').trim();
+          const puntuacionStr = (w.getAttribute('data-puntuacion') ?? '').trim();
+          const puntuacion = puntuacionStr === '' ? -1 : parseFloat(puntuacionStr);
+          const goals = parseInt(w.getAttribute('data-goals') ?? '0', 10);
+          const assists = parseInt(w.getAttribute('data-assists') ?? '0', 10);
+
+          let ok = true;
+
+          if (puntVal) {
+            if (puntVal === 'sin') {
+              if (puntuacion >= 0) ok = false;
+            } else {
+              const minPunt = parseFloat(puntVal);
+              if (puntuacion < minPunt) ok = false;
+            }
+          }
+          if (ok && golesVal !== '') {
+            const minG = parseInt(golesVal, 10);
+            if (goals < minG) ok = false;
+          }
+          if (ok && actuacionVal && actuacion !== actuacionVal) ok = false;
+          if (ok && posicionVal && posicion !== posicionVal) ok = false;
+
+          (w as HTMLElement).style.display = ok ? '' : 'none';
+          if (ok) visible++;
+        });
+
+        if (countSpan) countSpan.textContent = String(visible);
+      }
+
+      [filterPuntuacion, filterGoles, filterActuacion, filterPosicion].forEach((el) => {
+        el?.addEventListener('change', applyFilters);
+      });
+
+      btnLimpiar?.addEventListener('click', () => {
+        [filterPuntuacion, filterGoles, filterActuacion, filterPosicion].forEach((el) => {
+          if (el) el.value = '';
+        });
+        applyFilters();
+      });
+    })();
+  </script>
+</Layout>

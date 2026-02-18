@@ -11,7 +11,7 @@ const { label, date, static: isStatic = true } = Astro.props;
 ---
 
 <article
-  class="bg-card-dark rounded-xl rounded-br-none border border-white/10 flex flex-col gap-0.5 py-1.5 px-3 min-w-[140px] max-w-[200px] hover:border-gold/30 transition-all"
+  class="bg-card-dark rounded-xl rounded-tl-none rounded-br-none border border-white/10 flex flex-col gap-0.5 py-1.5 px-3 min-w-[140px] max-w-[200px] hover:border-gold/30 transition-all"
   class:list={[!isStatic && 'cursor-pointer group']}
   aria-label={date ? `${label} · ${date}` : label}
 >

@@ -56,16 +56,72 @@ function isActive(href: string): boolean {
             <nav class="hidden md:flex items-center gap-8" aria-label="Principal">
               <a href="/" class:list={['text-sm font-bold transition-colors font-sans', isActive('/') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/') ? 'page' : undefined}>Inicio</a>
               <a href="/selecciones" class:list={['text-sm font-bold transition-colors font-sans', isActive('/selecciones') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/selecciones') ? 'page' : undefined}>La Vinotinto</a>
-              <a href="/los-nuestros" class:list={['text-sm font-bold transition-colors font-sans', isActive('/los-nuestros') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/los-nuestros') ? 'page' : undefined}>Los Nuestros</a>
+              <a href="/vinotintos-por-el-mundo" class:list={['text-sm font-bold transition-colors font-sans', isActive('/vinotintos-por-el-mundo') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/vinotintos-por-el-mundo') ? 'page' : undefined}>Vinotintos por el Mundo</a>
               <a href="/contacto" class:list={['text-sm font-bold transition-colors font-sans', isActive('/contacto') ? 'text-gold' : 'text-white hover:text-gold']} aria-current={isActive('/contacto') ? 'page' : undefined}>Contacto</a>
             </nav>
-            <a href="/pizarra" class="rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold py-2 px-4 sm:px-6 transition-colors hidden sm:inline-block font-sans whitespace-nowrap">
+            <a href="/pizarra" class="rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold py-2 px-4 sm:px-6 transition-colors hidden md:inline-block font-sans whitespace-nowrap">
               La Pizarra Vinotinto
             </a>
+
+            <button
+              type="button"
+              id="header-menu-toggle"
+              class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-white/10 focus:ring-2 focus:ring-gold focus:outline-none transition-colors"
+              aria-label="Abrir menú"
+              aria-expanded="false"
+              aria-controls="header-mobile-menu"
+            >
+              <span id="header-menu-icon" class="material-symbols-outlined" aria-hidden="true">menu</span>
+            </button>
           </div>
+        </div>
+
+        <div id="header-mobile-menu" class="hidden md:hidden border-t border-white/10 bg-black/98 backdrop-blur-md" aria-label="Menú móvil" role="dialog" aria-modal="true">
+          <nav class="flex flex-col py-4" aria-label="Navegación principal">
+            <a href="/" class:list={['px-4 py-3 text-sm font-bold font-sans transition-colors', isActive('/') ? 'text-gold bg-white/5' : 'text-white hover:bg-white/10 hover:text-gold']} aria-current={isActive('/') ? 'page' : undefined}>Inicio</a>
+            <a href="/selecciones" class:list={['px-4 py-3 text-sm font-bold font-sans transition-colors', isActive('/selecciones') ? 'text-gold bg-white/5' : 'text-white hover:bg-white/10 hover:text-gold']} aria-current={isActive('/selecciones') ? 'page' : undefined}>La Vinotinto</a>
+            <a href="/vinotintos-por-el-mundo" class:list={['px-4 py-3 text-sm font-bold font-sans transition-colors', isActive('/vinotintos-por-el-mundo') ? 'text-gold bg-white/5' : 'text-white hover:bg-white/10 hover:text-gold']} aria-current={isActive('/vinotintos-por-el-mundo') ? 'page' : undefined}>Vinotintos por el Mundo</a>
+            <a href="/contacto" class:list={['px-4 py-3 text-sm font-bold font-sans transition-colors', isActive('/contacto') ? 'text-gold bg-white/5' : 'text-white hover:bg-white/10 hover:text-gold']} aria-current={isActive('/contacto') ? 'page' : undefined}>Contacto</a>
+          </nav>
         </div>
       </div>
     </header>
+
+    <script>
+      (function () {
+        const toggle = document.getElementById('header-menu-toggle');
+        const menu = document.getElementById('header-mobile-menu');
+        const icon = document.getElementById('header-menu-icon');
+        if (!toggle || !menu) return;
+
+        function openMenu() {
+          menu?.classList.remove('hidden');
+          toggle?.setAttribute('aria-expanded', 'true');
+          toggle?.setAttribute('aria-label', 'Cerrar menú');
+          if (icon) icon.textContent = 'close';
+        }
+        function closeMenu() {
+          menu?.classList.add('hidden');
+          toggle?.setAttribute('aria-expanded', 'false');
+          toggle?.setAttribute('aria-label', 'Abrir menú');
+          if (icon) icon.textContent = 'menu';
+        }
+
+        toggle.addEventListener('click', () => {
+          const expanded = toggle.getAttribute('aria-expanded') === 'true';
+          if (expanded) closeMenu();
+          else openMenu();
+        });
+
+        menu?.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', closeMenu);
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+        });
+      })();
+    </script>
 
     <main class="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       {hasSidebar ? (
@@ -94,9 +150,9 @@ function isActive(href: string): boolean {
           <nav class="flex flex-wrap justify-center gap-8 text-sm font-bold text-slate-400 font-sans" aria-label="Enlaces del sitio">
             <a href="/" class:list={['hover:text-gold transition-colors', isActive('/') && 'text-gold']}>Inicio</a>
             <a href="/selecciones" class:list={['hover:text-gold transition-colors', isActive('/selecciones') && 'text-gold']}>La Vinotinto</a>
-            <a href="/los-nuestros" class:list={['hover:text-gold transition-colors', isActive('/los-nuestros') && 'text-gold']}>Los Nuestros</a>
+            <a href="/vinotintos-por-el-mundo" class:list={['hover:text-gold transition-colors', isActive('/vinotintos-por-el-mundo') && 'text-gold']}>Vinotintos por el Mundo</a>
             <a href="/contacto" class:list={['hover:text-gold transition-colors', isActive('/contacto') && 'text-gold']}>Contacto</a>
-            <a href="/pizarra" class:list={['hover:text-gold transition-colors', isActive('/pizarra') && 'text-gold']}>La Pizarra Vinotinto</a>
+            <a href="/pizarra" class:list={['hover:text-gold transition-colors hidden md:inline-block', isActive('/pizarra') && 'text-gold']}>La Pizarra Vinotinto</a>
           </nav>
         </div>
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-white/5">

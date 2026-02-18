@@ -1,9 +1,9 @@
 /**
- * Mapeo de jugadores desde WordPress (CPT Los nuestros + ACF) al tipo Legionario.
+ * Mapeo de jugadores desde WordPress (CPT Vinotintos por el Mundo + ACF) al tipo Legionario.
  * Ajusta las claves acf.* según los nombres exactos de tus campos en WordPress.
  */
 import type { WpJugador } from '../types/wordpress';
-import type { Legionario, LegionarioStatusType } from '../types/legionarios';
+import type { Legionario, LegionarioDefensiveStats, LegionarioKeeperStats, LegionarioStatusType } from '../types/legionarios';
 
 /** Extrae URL de un valor ACF: string, objeto { url }, o array de objetos { url }. */
 function getUrlFromAcfValue(val: unknown): string | null {
@@ -108,13 +108,30 @@ export function wpJugadorToLegionario(wp: WpJugador): Legionario {
   const matchday =
     (acf.jornada as string) ?? (acf.matchday as string) ?? '';
   const rival = (acf.rival as string) ?? (acf.opponent as string) ?? undefined;
-  const actuacion = ((acf.actuacion as string) ?? (acf.performance as string) ?? '').trim() || undefined;
-  const urlDeReferencia = ((acf.url_de_referencia as string) ?? '').trim() || undefined;
+  const actuacionRaw = acf.actuacion ?? acf.performance ?? '';
+  const actuacion = typeof actuacionRaw === 'string' && actuacionRaw.trim() !== '' ? actuacionRaw.trim() : undefined;
+  const urlRefRaw = acf.url_de_referencia ?? '';
+  const urlDeReferencia = typeof urlRefRaw === 'string' && urlRefRaw.trim() !== '' ? urlRefRaw.trim() : undefined;
   const puntuacionRaw = acf.puntuacion;
   const puntuacion =
     puntuacionRaw !== undefined && puntuacionRaw !== null && puntuacionRaw !== ''
       ? (typeof puntuacionRaw === 'number' ? puntuacionRaw : String(puntuacionRaw).trim())
       : undefined;
+  const posicionRaw = acf.posicion ?? acf.position ?? '';
+  const posicion = (() => {
+    // ACF puede devolver: string, array de strings, false, null, etc.
+    if (Array.isArray(posicionRaw)) {
+      const first = posicionRaw[0];
+      const val = typeof first === 'string' ? first.trim() : typeof first === 'object' && first !== null && 'label' in first ? String((first as { label: string }).label).trim() : '';
+      return val || undefined;
+    }
+    if (typeof posicionRaw === 'string' && posicionRaw.trim() !== '') {
+      // Si vienen varias posiciones separadas por coma, tomar solo la primera
+      const first = posicionRaw.split(',')[0].split('/')[0].split(' - ')[0].trim();
+      return first || undefined;
+    }
+    return undefined;
+  })();
   const fechaRaw =
     (acf.fecha as string) ??
     (acf.date_match as string) ??
@@ -127,6 +144,72 @@ export function wpJugadorToLegionario(wp: WpJugador): Legionario {
       : wp.date
         ? formatFecha(wp.date)
         : undefined;
+
+  const isPortero = (p: string | undefined): boolean => {
+    if (!p || typeof p !== 'string') return false;
+    const n = p.trim().toUpperCase();
+    return n === 'POR' || n === 'PORTERO' || n.includes('POR');
+  };
+
+  const DEFENSIVE_POSITIONS = ['DFC', 'LI', 'LD', 'MCD'];
+  const isDefensivo = (p: string | undefined): boolean => {
+    if (!p || typeof p !== 'string') return false;
+    const n = p.trim().toUpperCase();
+    return DEFENSIVE_POSITIONS.some((pos) => n === pos || n.includes(pos));
+  };
+
+  const OFFENSIVE_POSITIONS = ['MCO', 'EI', 'ED', 'DC', 'SD'];
+  const isOffensivo = (p: string | undefined): boolean => {
+    if (!p || typeof p !== 'string') return false;
+    const n = p.trim().toUpperCase();
+    return OFFENSIVE_POSITIONS.some((pos) => n === pos || n.includes(pos));
+  };
+
+  const toNum = (v: number | string | undefined | null): number => {
+    if (v === undefined || v === null) return 0;
+    if (typeof v === 'number' && !Number.isNaN(v)) return v;
+    const n = parseFloat(String(v).replace(',', '.'));
+    return Number.isNaN(n) ? 0 : n;
+  };
+
+  const keeperStats: LegionarioKeeperStats | undefined =
+    isPortero(posicion)
+      ? {
+          atajadas: toNum(acf.atajadas),
+          golesEncajados: toNum(acf.goles_encajados),
+          penaltisParados: toNum(acf.penaltis_parados),
+          despejes: toNum(acf.despejes),
+        }
+      : undefined;
+
+  const duelosGanadosRaw = acf.duelos_ganados;
+  const duelosGanados =
+    typeof duelosGanadosRaw === 'string' && duelosGanadosRaw.trim() !== ''
+      ? duelosGanadosRaw.trim()
+      : typeof duelosGanadosRaw === 'number' && !Number.isNaN(duelosGanadosRaw)
+        ? String(duelosGanadosRaw)
+        : '—';
+
+  const defensiveStats: LegionarioDefensiveStats | undefined =
+    isDefensivo(posicion)
+      ? {
+          intercepciones: toNum(acf.intercepciones),
+          duelosGanados,
+        }
+      : undefined;
+
+  const posUpper = posicion?.trim().toUpperCase() ?? '';
+  const isSDorDC = posUpper === 'SD' || posUpper === 'DC';
+  const showPrecisionDePases = !isPortero(posicion) && !isSDorDC;
+  const precisionDePases = showPrecisionDePases ? toNum(acf.precision_de_pases) : undefined;
+
+  const ocasionesDeGolRaw = acf.ocasiones_de_gol;
+  const ocasionesDeGol =
+    isSDorDC && ocasionesDeGolRaw !== undefined && ocasionesDeGolRaw !== null && ocasionesDeGolRaw !== ''
+      ? typeof ocasionesDeGolRaw === 'number'
+        ? ocasionesDeGolRaw
+        : String(ocasionesDeGolRaw).trim()
+      : undefined;
 
   return {
     id: String(wp.id),
@@ -151,5 +234,11 @@ export function wpJugadorToLegionario(wp: WpJugador): Legionario {
     ...(actuacion && { actuacion }),
     ...(urlDeReferencia && { urlDeReferencia }),
     ...(puntuacion !== undefined && puntuacion !== '' && { puntuacion }),
+    ...(posicion && { posicion }),
+    ...(keeperStats && { keeperStats }),
+    ...(defensiveStats && { defensiveStats }),
+    ...(isOffensivo(posicion) && duelosGanados !== '—' && { duelosGanados }),
+    ...(showPrecisionDePases && { precisionDePases }),
+    ...(isSDorDC && ocasionesDeGol !== undefined && ocasionesDeGol !== '' && { ocasionesDeGol }),
   };
 }

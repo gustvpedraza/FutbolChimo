@@ -145,16 +145,21 @@ export const wpApi = {
     return data[0] ?? null;
   },
 
-  /** CPT Jugadores (Los Nuestros). API: GET /wp-json/wp/v2/los-nuestros */
+  /** CPT Jugadores (Vinotintos por el Mundo). Prueba vinotintos-por-el-mundo y, si falla, los-nuestros por compatibilidad. */
   async getJugadores(params?: { per_page?: number; page?: number }) {
     const q = buildQuery({
       per_page: params?.per_page ?? 50,
       page: params?.page ?? 1,
       _embed: '1',
     });
-    const res = await fetch(`${base}/los-nuestros?${q}`);
-    if (!res.ok) throw new Error(`WP API error: ${res.status} (¿CPT Los nuestros registrado?)`);
-    return res.json() as Promise<WpJugador[]>;
+    const endpoints = ['vinotintos-por-el-mundo', 'los-nuestros'] as const;
+    for (const endpoint of endpoints) {
+      const res = await fetch(`${base}/${endpoint}?${q}`);
+      if (res.ok) return res.json() as Promise<WpJugador[]>;
+      if (res.status === 404 || res.status === 403) continue;
+      throw new Error(`WP API error: ${res.status} (CPT jugadores: ${endpoint})`);
+    }
+    return [];
   },
 
   /** CPT EquiposFutVE. API: GET /wp-json/wp/v2/equipos-fut-ve */

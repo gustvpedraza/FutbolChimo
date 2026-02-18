@@ -19,12 +19,12 @@ const TITLES = [
   'Wilker Ángel renueva con su club en la Superliga turca',
   'Análisis táctico: cómo juega Venezuela bajo el nuevo DT',
   'Futve: Caracas y Metropolitanos lideran la tabla de posiciones',
-  'Los Nuestros: el resumen de la semana en las ligas europeas',
+  'Vinotintos por el Mundo: el resumen de la semana en las ligas europeas',
 ];
 
 const CATEGORIES = [
   { name: 'Selecciones', slug: 'selecciones' },
-  { name: 'Los Nuestros', slug: 'los-nuestros' },
+  { name: 'Vinotintos por el Mundo', slug: 'vinotintos-por-el-mundo' },
   { name: 'Futve', slug: 'futve' },
   { name: 'Eliminatorias', slug: 'eliminatorias' },
   { name: 'Cosecha', slug: 'cosecha' },

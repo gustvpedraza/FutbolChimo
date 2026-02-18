@@ -21,7 +21,7 @@ const { title, subtitle, viewAllHref, id, size = 'default' } = Astro.props;
       </h2>
       <slot name="sublabels" />
     </div>
-    {subtitle && <p class="mt-2 text-sm text-slate-400 font-sans">{subtitle}</p>}
+    {subtitle && <p class="mt-2 text-sm text-white/50 font-sans">{subtitle}</p>}
   </div>
   {viewAllHref && (
     <a href={viewAllHref} class="text-gold text-sm font-bold hover:text-white transition-colors flex items-center gap-1 font-sans shrink-0">

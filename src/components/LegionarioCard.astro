@@ -23,6 +23,10 @@ function getActuacionDisplay(actuacion: string | undefined, statusType: Legionar
       return { emoji: '🚫', footerBg: 'bg-amber-500/20' };
     case 'expulsado':
       return { emoji: '🟥', footerBg: 'bg-primary/20' };
+    case 'amonestado':
+      return { emoji: '🟨', footerBg: 'bg-amber-500/20' };
+    case 'convocado':
+      return { emoji: '🇻🇪', footerBg: 'bg-primary/25' };
     case 'no convocado':
       return { emoji: '⏸️', footerBg: 'bg-slate-600/20' };
     case 'actuación destacada':
@@ -61,6 +65,12 @@ function getPuntuacionCapsuleClass(puntuacion: string | number): string {
 }
 
 const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== null && player.puntuacion !== '';
+const showKeeperStats = player.keeperStats != null;
+const showDefensiveStats =
+  player.defensiveStats != null && player.stats.goals === 0 && player.stats.assists === 0;
+const precisionDisplay = player.precisionDePases != null ? `${player.precisionDePases}%` : '—';
+const isSDorDC = (player.posicion?.trim().toUpperCase() ?? '') === 'SD' || (player.posicion?.trim().toUpperCase() ?? '') === 'DC';
+const ocasionesDisplay = isSDorDC ? (player.ocasionesDeGol !== undefined && player.ocasionesDeGol !== '' ? String(player.ocasionesDeGol) : '—') : '';
 ---
 
 {player.urlDeReferencia ? (
@@ -126,7 +136,7 @@ const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== n
       {player.rival ? (
         <>
           <span class="text-[10px] font-bold text-white/70 normal-case tracking-wide block">VS</span>
-          <span class="text-gold">{player.rival}</span>
+          <span class="text-gold block mb-2">{player.rival}</span>
         </>
       ) : (
         <span>{player.team} • {player.league}</span>
@@ -134,28 +144,122 @@ const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== n
     </p>
   </div>
 
-  <!-- Stats: minutos, goles, asistencias (una línea) -->
-  <div class="border-t border-white/10 bg-white/5 p-5 flex flex-wrap justify-center items-center gap-6">
-    <div class="flex gap-2">
-      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">schedule</span>
-      <div>
-        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
-        <p class="font-bold text-white font-sans">{player.stats.minutes}</p>
+  <!-- Stats: minutos, goles, asistencias. Chip de posición encima, centrado -->
+  <div class="relative">
+    {player.posicion && (
+      <div class="absolute left-1/2 -translate-x-1/2 -top-3 z-10 flex justify-center pointer-events-none">
+        <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold font-sans bg-amber-400/95 text-slate-900 uppercase tracking-wider shadow-md border border-amber-300/50">
+          {player.posicion}
+        </span>
       </div>
-    </div>
-    <div class="flex gap-2">
-      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">sports_soccer</span>
-      <div>
-        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles</p>
-        <p class:list={['font-bold font-sans', player.stats.goals === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.goals}</p>
-      </div>
-    </div>
-    <div class="flex gap-2">
-      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">assist_walker</span>
-      <div>
-        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Asistencias</p>
-        <p class:list={['font-bold font-sans', player.stats.assists === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.assists}</p>
-      </div>
+    )}
+    <div class="border-t border-white/10 bg-white/5 p-5 pt-7 grid grid-cols-2 gap-4">
+      {showKeeperStats ? (
+        <>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">save</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Atajadas</p>
+              <p class="font-bold text-white font-sans truncate">{player.keeperStats!.atajadas}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">sports_soccer</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles Recibidos</p>
+              <p class:list={['font-bold font-sans truncate', player.keeperStats!.golesEncajados === 0 ? 'text-slate-500' : 'text-white']}>{player.keeperStats!.golesEncajados}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">block</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Penaltis parados</p>
+              <p class:list={['font-bold font-sans truncate', player.keeperStats!.penaltisParados === 0 ? 'text-slate-500' : 'text-white']}>{player.keeperStats!.penaltisParados}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">back_hand</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Despejes</p>
+              <p class:list={['font-bold font-sans truncate', player.keeperStats!.despejes === 0 ? 'text-slate-500' : 'text-white']}>{player.keeperStats!.despejes}</p>
+            </div>
+          </div>
+        </>
+      ) : showDefensiveStats ? (
+        <>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">schedule</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
+              <p class="font-bold text-white font-sans truncate">{player.stats.minutes}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">swap_horiz</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Intercepciones</p>
+              <p class:list={['font-bold font-sans truncate', player.defensiveStats!.intercepciones === 0 ? 'text-slate-500' : 'text-white']}>{player.defensiveStats!.intercepciones}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">sports_mma</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Duelos ganados</p>
+              <p class:list={['font-bold font-sans truncate', !player.defensiveStats!.duelosGanados || player.defensiveStats!.duelosGanados === '—' ? 'text-slate-500' : 'text-white']}>{player.defensiveStats!.duelosGanados}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">percent</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Precisión de pases</p>
+              <p class:list={['font-bold font-sans truncate', precisionDisplay === '—' ? 'text-slate-500' : 'text-white']}>{precisionDisplay}</p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">schedule</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
+              <p class="font-bold text-white font-sans truncate">{player.stats.minutes}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">sports_soccer</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles</p>
+              <p class:list={['font-bold font-sans truncate', player.stats.goals === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.goals}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">assist_walker</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Asistencias</p>
+              <p class:list={['font-bold font-sans truncate', player.stats.assists === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.assists}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            {isSDorDC ? (
+              <>
+                <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">target</span>
+                <div class="min-w-0">
+                  <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Ocasiones de gol</p>
+                  <p class:list={['font-bold font-sans truncate', ocasionesDisplay === '—' ? 'text-slate-500' : 'text-white']}>{ocasionesDisplay}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">percent</span>
+                <div class="min-w-0">
+                  <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Precisión de pases</p>
+                  <p class:list={['font-bold font-sans truncate', precisionDisplay === '—' ? 'text-slate-500' : 'text-white']}>{precisionDisplay}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   </div>
 
@@ -167,9 +271,11 @@ const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== n
         {footerLabel}
       </span>
     </div>
-    <span class="text-slate-400 text-xs font-normal tracking-tighter">
-      {player.status.subText && player.status.subText !== player.matchday ? player.status.subText : (!player.matchday ? '—' : '')}
-    </span>
+    {(player.status.subText && player.status.subText !== player.matchday) && (
+      <span class="text-slate-400 text-xs font-normal tracking-tighter">
+        {player.status.subText}
+      </span>
+    )}
   </footer>
 </article>
   </a>
@@ -229,7 +335,7 @@ const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== n
       {player.rival ? (
         <>
           <span class="text-[10px] font-bold text-white/70 normal-case tracking-wide block">VS</span>
-          <span class="text-gold">{player.rival}</span>
+          <span class="text-gold block mb-2">{player.rival}</span>
         </>
       ) : (
         <span>{player.team} • {player.league}</span>
@@ -237,28 +343,122 @@ const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== n
     </p>
   </div>
 
-  <!-- Stats: minutos, goles, asistencias (una línea) -->
-  <div class="border-t border-white/10 bg-white/5 p-5 flex flex-wrap justify-center items-center gap-6">
-    <div class="flex gap-2">
-      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">schedule</span>
-      <div>
-        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
-        <p class="font-bold text-white font-sans">{player.stats.minutes}</p>
+  <!-- Stats: minutos/goles/asistencias o portero (Atajadas, Goles Recibidos, Penaltis parados). Chip de posición encima, centrado -->
+  <div class="relative">
+    {player.posicion && (
+      <div class="absolute left-1/2 -translate-x-1/2 -top-3 z-10 flex justify-center pointer-events-none">
+        <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold font-sans bg-amber-400/95 text-slate-900 uppercase tracking-wider shadow-md border border-amber-300/50">
+          {player.posicion}
+        </span>
       </div>
-    </div>
-    <div class="flex gap-2">
-      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">sports_soccer</span>
-      <div>
-        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles</p>
-        <p class:list={['font-bold font-sans', player.stats.goals === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.goals}</p>
-      </div>
-    </div>
-    <div class="flex gap-2">
-      <span class="material-symbols-outlined text-xl text-white" aria-hidden="true">assist_walker</span>
-      <div>
-        <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Asistencias</p>
-        <p class:list={['font-bold font-sans', player.stats.assists === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.assists}</p>
-      </div>
+    )}
+    <div class="border-t border-white/10 bg-white/5 p-5 pt-7 grid grid-cols-2 gap-4">
+      {showKeeperStats ? (
+        <>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">save</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Atajadas</p>
+              <p class="font-bold text-white font-sans truncate">{player.keeperStats!.atajadas}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">sports_soccer</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles Recibidos</p>
+              <p class:list={['font-bold font-sans truncate', player.keeperStats!.golesEncajados === 0 ? 'text-slate-500' : 'text-white']}>{player.keeperStats!.golesEncajados}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">block</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Penaltis parados</p>
+              <p class:list={['font-bold font-sans truncate', player.keeperStats!.penaltisParados === 0 ? 'text-slate-500' : 'text-white']}>{player.keeperStats!.penaltisParados}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">back_hand</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Despejes</p>
+              <p class:list={['font-bold font-sans truncate', player.keeperStats!.despejes === 0 ? 'text-slate-500' : 'text-white']}>{player.keeperStats!.despejes}</p>
+            </div>
+          </div>
+        </>
+      ) : showDefensiveStats ? (
+        <>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">schedule</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
+              <p class="font-bold text-white font-sans truncate">{player.stats.minutes}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">swap_horiz</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Intercepciones</p>
+              <p class:list={['font-bold font-sans truncate', player.defensiveStats!.intercepciones === 0 ? 'text-slate-500' : 'text-white']}>{player.defensiveStats!.intercepciones}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">sports_mma</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Duelos ganados</p>
+              <p class:list={['font-bold font-sans truncate', !player.defensiveStats!.duelosGanados || player.defensiveStats!.duelosGanados === '—' ? 'text-slate-500' : 'text-white']}>{player.defensiveStats!.duelosGanados}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">percent</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Precisión de pases</p>
+              <p class:list={['font-bold font-sans truncate', precisionDisplay === '—' ? 'text-slate-500' : 'text-white']}>{precisionDisplay}</p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">schedule</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Minutos</p>
+              <p class="font-bold text-white font-sans truncate">{player.stats.minutes}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">sports_soccer</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Goles</p>
+              <p class:list={['font-bold font-sans truncate', player.stats.goals === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.goals}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">assist_walker</span>
+            <div class="min-w-0">
+              <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Asistencias</p>
+              <p class:list={['font-bold font-sans truncate', player.stats.assists === 0 ? 'text-slate-500' : 'text-white']}>{player.stats.assists}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 items-center min-w-0">
+            {isSDorDC ? (
+              <>
+                <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">target</span>
+                <div class="min-w-0">
+                  <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Ocasiones de gol</p>
+                  <p class:list={['font-bold font-sans truncate', ocasionesDisplay === '—' ? 'text-slate-500' : 'text-white']}>{ocasionesDisplay}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <span class="material-symbols-outlined text-xl text-white shrink-0" aria-hidden="true">percent</span>
+                <div class="min-w-0">
+                  <p class="text-[10px] text-slate-400 uppercase font-bold font-sans">Precisión de pases</p>
+                  <p class:list={['font-bold font-sans truncate', precisionDisplay === '—' ? 'text-slate-500' : 'text-white']}>{precisionDisplay}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   </div>
 
@@ -270,9 +470,11 @@ const hasPuntuacion = player.puntuacion !== undefined && player.puntuacion !== n
         {footerLabel}
       </span>
     </div>
-    <span class="text-slate-400 text-xs font-normal tracking-tighter">
-      {player.status.subText && player.status.subText !== player.matchday ? player.status.subText : (!player.matchday ? '—' : '')}
-    </span>
+    {(player.status.subText && player.status.subText !== player.matchday) && (
+      <span class="text-slate-400 text-xs font-normal tracking-tighter">
+        {player.status.subText}
+      </span>
+    )}
   </footer>
 </article>
 )}

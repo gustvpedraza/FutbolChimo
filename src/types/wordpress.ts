@@ -71,7 +71,7 @@ export interface WpPostEmbedded extends WpPost {
   };
 }
 
-/** Custom Post Type: Jugadores (Los Nuestros). ACF según campos que expongas en REST. */
+/** Custom Post Type: Jugadores (Vinotintos por el Mundo). ACF según campos que expongas en REST. */
 export interface WpJugador {
   id: number;
   date: string;
@@ -128,6 +128,24 @@ export interface WpJugador {
     url_de_referencia?: string;
     /** Puntuación (ACF) */
     puntuacion?: number | string;
+    /** Posición del jugador (ACF), ej. "Delantero", "Mediocampista" */
+    posicion?: string;
+    /** ACF: Atajadas (porteros) */
+    atajadas?: number | string;
+    /** ACF: Goles encajados (porteros) */
+    goles_encajados?: number | string;
+    /** ACF: Penaltis parados (porteros) */
+    penaltis_parados?: number | string;
+    /** ACF: Despejes (porteros) */
+    despejes?: number | string;
+    /** ACF: Intercepciones (defensas) */
+    intercepciones?: number | string;
+    /** ACF: Duelos ganados (defensas); en WordPress viene como string */
+    duelos_ganados?: string;
+    /** ACF: Precisión de pases (número, ej. 85 para 85%); no se usa para POR, SD, DC */
+    precision_de_pases?: number | string;
+    /** ACF: Ocasiones de gol (para posiciones SD y DC) */
+    ocasiones_de_gol?: number | string;
     [key: string]: unknown;
   };
   _embedded?: {
